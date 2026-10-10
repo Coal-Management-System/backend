@@ -1,0 +1,198 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0002-warehouse
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: warehouse
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: number, type: "varchar(50)", constraints: { nullable: false, unique: true } }
+              - column: { name: location, type: "varchar(200)" }
+              - column: { name: status, type: "varchar(20)", constraints: { nullable: false } }
+
+  - changeSet:
+      id: 0002-laboratory
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: laboratory
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: name, type: "varchar(200)", constraints: { nullable: false, unique: true } }
+
+  - changeSet:
+      id: 0002-coal-batch
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: coal_batch
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: batch_number, type: "varchar(50)", constraints: { nullable: false, unique: true } }
+              - column: { name: product_type, type: "varchar(100)" }
+              - column: { name: status, type: "varchar(30)", constraints: { nullable: false } }
+              - column: { name: coal_grade, type: "varchar(50)" }
+              - column: { name: fraction, type: "varchar(50)" }
+              - column: { name: origin_type, type: "varchar(20)", constraints: { nullable: false } }
+              - column: { name: deposit, type: "varchar(100)" }
+              - column: { name: mining_site, type: "varchar(100)" }
+              - column: { name: quarry, type: "varchar(100)" }
+              - column: { name: shift_period, type: "varchar(100)" }
+              - column: { name: supplier, type: "varchar(200)" }
+              - column: { name: mined_at, type: timestamptz }
+              - column: { name: initial_weight, type: "numeric(14,2)", constraints: { nullable: false } }
+              - column: { name: reserved_volume, type: "numeric(14,2)", constraints: { nullable: false } }
+              - column: { name: in_processing_volume, type: "numeric(14,2)", constraints: { nullable: false } }
+              - column: { name: shipped_volume, type: "numeric(14,2)", constraints: { nullable: false } }
+              - column: { name: losses, type: "numeric(14,2)", constraints: { nullable: false } }
+
+  - changeSet:
+      id: 0002-coal-heap
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: coal_heap
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: heap_number, type: "varchar(50)", constraints: { nullable: false, unique: true } }
+              - column: { name: volume, type: "numeric(14,2)", constraints: { nullable: false } }
+              - column: { name: warehouse_id, type: uuid }
+              - column: { name: status, type: "varchar(20)", constraints: { nullable: false } }
+              - column: { name: origin_source, type: "varchar(200)" }
+        - addForeignKeyConstraint:
+            baseTableName: coal_heap
+            baseColumnNames: warehouse_id
+            referencedTableName: warehouse
+            referencedColumnNames: id
+            constraintName: fk_heap_warehouse
+
+  - changeSet:
+      id: 0002-coal-movement
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: coal_movement
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: batch_id, type: uuid }
+              - column: { name: heap_id, type: uuid }
+              - column: { name: operation, type: "varchar(30)", constraints: { nullable: false } }
+              - column: { name: volume, type: "numeric(14,2)", constraints: { nullable: false } }
+              - column: { name: from_location, type: "varchar(200)" }
+              - column: { name: to_location, type: "varchar(200)" }
+              - column: { name: origin_source, type: "varchar(200)" }
+        - addForeignKeyConstraint:
+            baseTableName: coal_movement
+            baseColumnNames: batch_id
+            referencedTableName: coal_batch
+            referencedColumnNames: id
+            constraintName: fk_movement_batch
+        - addForeignKeyConstraint:
+            baseTableName: coal_movement
+            baseColumnNames: heap_id
+            referencedTableName: coal_heap
+            referencedColumnNames: id
+            constraintName: fk_movement_heap
+
+  - changeSet:
+      id: 0002-lab-analysis
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: lab_analysis
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: sample_number, type: "varchar(50)", constraints: { nullable: false, unique: true } }
+              - column: { name: batch_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: lab_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: protocol_number, type: "varchar(50)" }
+              - column: { name: responsible_employee, type: "varchar(200)" }
+              - column: { name: method, type: "varchar(200)" }
+              - column: { name: analysis_date, type: timestamptz }
+              - column: { name: stage, type: "varchar(30)", constraints: { nullable: false } }
+              - column: { name: status, type: "varchar(20)", constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: lab_analysis
+            baseColumnNames: batch_id
+            referencedTableName: coal_batch
+            referencedColumnNames: id
+            constraintName: fk_analysis_batch
+        - addForeignKeyConstraint:
+            baseTableName: lab_analysis
+            baseColumnNames: lab_id
+            referencedTableName: laboratory
+            referencedColumnNames: id
+            constraintName: fk_analysis_lab
+
+  - changeSet:
+      id: 0002-lab-analysis-value
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: lab_analysis_value
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: analysis_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: indicator, type: "varchar(30)", constraints: { nullable: false } }
+              - column: { name: value, type: "numeric(12,3)", constraints: { nullable: false } }
+              - column: { name: unit, type: "varchar(20)" }
+        - addForeignKeyConstraint:
+            baseTableName: lab_analysis_value
+            baseColumnNames: analysis_id
+            referencedTableName: lab_analysis
+            referencedColumnNames: id
+            constraintName: fk_value_analysis
+
+  - changeSet:
+      id: 0002-batch-links
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: coal_batch_source
+            columns:
+              - column: { name: batch_id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: source_batch_id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: coal_batch_source
+            baseColumnNames: batch_id
+            referencedTableName: coal_batch
+            referencedColumnNames: id
+            constraintName: fk_batch_source_batch
+        - addForeignKeyConstraint:
+            baseTableName: coal_batch_source
+            baseColumnNames: source_batch_id
+            referencedTableName: coal_batch
+            referencedColumnNames: id
+            constraintName: fk_batch_source_source
+        - createTable:
+            tableName: coal_batch_heap
+            columns:
+              - column: { name: batch_id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: heap_id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: coal_batch_heap
+            baseColumnNames: batch_id
+            referencedTableName: coal_batch
+            referencedColumnNames: id
+            constraintName: fk_batch_heap_batch
+        - addForeignKeyConstraint:
+            baseTableName: coal_batch_heap
+            baseColumnNames: heap_id
+            referencedTableName: coal_heap
+            referencedColumnNames: id
+            constraintName: fk_batch_heap_heap

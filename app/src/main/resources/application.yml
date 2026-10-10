@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: coal-transport
+  datasource:
+    url: jdbc:postgresql://localhost:5434/coal
+    username: coal
+    password: coal
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+coal:
+  qr:
+    base-url: http://localhost:5174
+  quality:
+    max-ash: 20
+    max-moisture: 12

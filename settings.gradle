@@ -1,0 +1,5 @@
+rootProject.name = 'coal-transport-backend'
+
+include 'shared'
+include 'api'
+include 'app'
