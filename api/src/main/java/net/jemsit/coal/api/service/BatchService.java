@@ -2,6 +2,7 @@ package net.jemsit.coal.api.service;
 
 import net.jemsit.coal.api.dto.BatchDtos.BatchCreateRequest;
 import net.jemsit.coal.api.dto.BatchDtos.BatchDto;
+import net.jemsit.coal.api.dto.BatchDtos.BatchUpdateRequest;
 import net.jemsit.coal.api.dto.BatchDtos.QualityHistoryRow;
 import net.jemsit.coal.api.dto.LabDtos.AnalysisValueDto;
 import net.jemsit.coal.shared.api.ApiException;
@@ -62,6 +63,29 @@ public class BatchService {
         b.setMinedAt(req.minedAt());
         b.setInitialWeight(req.initialWeight());
         b.setStatus(BatchStatus.NEW);
+        return toDto(batches.save(b));
+    }
+
+    @Transactional
+    public BatchDto update(UUID id, BatchUpdateRequest req) {
+        CoalBatch b = load(id);
+        if (!b.getBatchNumber().equals(req.batchNumber())
+                && batches.existsByBatchNumber(req.batchNumber())) {
+            throw ApiException.conflict("Партия с номером " + req.batchNumber() + " уже существует");
+        }
+        b.setBatchNumber(req.batchNumber());
+        b.setProductType(req.productType());
+        b.setStatus(req.status());
+        b.setCoalGrade(req.coalGrade());
+        b.setFraction(req.fraction());
+        b.setOriginType(req.originType());
+        b.setDeposit(req.deposit());
+        b.setMiningSite(req.miningSite());
+        b.setQuarry(req.quarry());
+        b.setShiftPeriod(req.shiftPeriod());
+        b.setSupplier(req.supplier());
+        b.setMinedAt(req.minedAt());
+        b.setInitialWeight(req.initialWeight());
         return toDto(batches.save(b));
     }
 

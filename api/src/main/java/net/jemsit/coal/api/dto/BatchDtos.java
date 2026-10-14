@@ -61,6 +61,22 @@ public final class BatchDtos {
             @NotNull @Positive BigDecimal initialWeight) {
     }
 
+    public record BatchUpdateRequest(
+            @NotBlank String batchNumber,
+            String productType,
+            @NotNull BatchStatus status,
+            String coalGrade,
+            String fraction,
+            @NotNull OriginType originType,
+            String deposit,
+            String miningSite,
+            String quarry,
+            String shiftPeriod,
+            String supplier,
+            Instant minedAt,
+            @NotNull @Positive BigDecimal initialWeight) {
+    }
+
     public record QualityHistoryRow(
             Instant analysisDate,
             BigDecimal ash,
