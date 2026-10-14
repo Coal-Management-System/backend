@@ -1,5 +1,6 @@
 package net.jemsit.coal.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,6 +17,12 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final List<String> allowedOrigins;
+
+    SecurityConfig(@Value("${coal.cors.allowed-origins:http://localhost:5174}") List<String> allowedOrigins) {
+        this.allowedOrigins = allowedOrigins;
+    }
+
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -30,7 +37,7 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(List.of("http://localhost:5174"));
+        cfg.setAllowedOrigins(allowedOrigins);
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         cfg.setAllowedHeaders(List.of("*"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

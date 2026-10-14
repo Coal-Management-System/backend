@@ -1,0 +1,97 @@
+name: CI/CD
+
+# Deploys only when a version tag is pushed:
+#   git tag v0.1.0 && git push origin v0.1.0
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+# A second tag pushed mid-deploy would race for the same app.jar and systemd
+# unit. cancel-in-progress is false so a deploy already touching the server
+# runs to completion.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  SERVER_HOST: ${{ secrets.SERVER_HOST }}
+  SERVER_USER: ${{ secrets.SERVER_USER }}
+  SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      # The jar is built here and shipped as a file, so the server needs no JDK
+      # and no Gradle - it only runs `java -jar` under systemd.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Build the boot jar
+        run: ./gradlew :app:bootJar --no-daemon
+
+      # ':app:bootJar' also leaves app-<version>-plain.jar next to the real one
+      # (the plain jar has no embedded launcher), so it must be filtered out.
+      - name: Resolve the boot jar path
+        id: jar
+        run: |
+          set -euo pipefail
+          jar=$(find app/build/libs -name 'app-*.jar' ! -name '*-plain.jar' -print -quit)
+          test -n "$jar"
+          echo "path=$jar" >> "$GITHUB_OUTPUT"
+
+      - name: Install the deploy key on the runner
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/server_key
+          chmod 600 ~/.ssh/server_key
+          ssh-keyscan -H "$SERVER_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      # Paths mirror ansible/vars/backend.yml in ~/Desktop/IoC/coal-transport,
+      # which owns first-time provisioning: setup.yml, setup_backend.yml and
+      # deploy_backend.yml must have run once before this workflow can succeed.
+      - name: Upload the jar
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/server_key "${{ steps.jar.outputs.path }}" \
+            "$SERVER_USER@$SERVER_HOST:/opt/coal-transport/app/app.jar.new"
+
+      - name: Swap in the jar, restart, and gate on health
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/server_key "$SERVER_USER@$SERVER_HOST" bash -s <<'EOS'
+            set -euo pipefail
+            cd /opt/coal-transport
+            # SERVER_PORT comes from the env file Ansible renders, so the port is
+            # not duplicated here. Parsed with sed rather than sourced: the file
+            # also holds the DB password, which must never go through the shell.
+            SERVER_PORT=$(sed -n 's/^SERVER_PORT=//p' coal-backend.env | head -n1)
+            cd app
+            if [ -f app.jar ]; then cp -f app.jar app.jar.prev; fi
+            mv -f app.jar.new app.jar
+            systemctl restart coal-backend
+            for attempt in $(seq 1 30); do
+              if curl -fsS "http://127.0.0.1:${SERVER_PORT:-8082}/actuator/health" > /dev/null; then
+                echo "healthy after ${attempt} attempt(s)"
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "health check failed, rolling back to app.jar.prev" >&2
+            if [ -f app.jar.prev ]; then
+              mv -f app.jar.prev app.jar
+              systemctl restart coal-backend
+            fi
+            journalctl -u coal-backend -n 60 --no-pager >&2 || true
+            exit 1
+          EOS

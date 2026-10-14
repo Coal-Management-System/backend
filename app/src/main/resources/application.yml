@@ -27,3 +27,8 @@ coal:
   quality:
     max-ash: 20
     max-moisture: 12
+  cors:
+    # Comma-separated. Override with COAL_CORS_ALLOWED_ORIGINS. Only matters when
+    # the SPA is served from a different origin than the API; a same-origin
+    # deployment (nginx proxying /api) never issues a cross-origin request.
+    allowed-origins: http://localhost:5174
