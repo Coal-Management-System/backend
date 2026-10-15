@@ -10,5 +10,5 @@ public interface MovementRepository extends JpaRepository<Movement, UUID> {
 
     List<Movement> findAllByOrderByCreatedAtDesc();
 
-    List<Movement> findByHeapIdOrderByCreatedAtDesc(UUID heapId);
+    List<Movement> findByPileIdOrderByCreatedAtDesc(UUID pileId);
 }

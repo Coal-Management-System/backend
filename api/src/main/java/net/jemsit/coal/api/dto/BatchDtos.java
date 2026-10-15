@@ -41,8 +41,8 @@ public final class BatchDtos {
             List<String> storageLocations,
             List<UUID> sourceBatchIds,
             List<String> sourceBatchNumbers,
-            List<UUID> heapIds,
-            List<String> heapNumbers,
+            List<UUID> pileIds,
+            List<String> pileNumbers,
             Instant createdAt) {
     }
 

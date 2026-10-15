@@ -20,8 +20,8 @@ public class Movement extends BaseEntity {
     private CoalBatch batch;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "heap_id")
-    private CoalHeap heap;
+    @JoinColumn(name = "pile_id")
+    private CoalPile pile;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -47,12 +47,12 @@ public class Movement extends BaseEntity {
         this.batch = batch;
     }
 
-    public CoalHeap getHeap() {
-        return heap;
+    public CoalPile getPile() {
+        return pile;
     }
 
-    public void setHeap(CoalHeap heap) {
-        this.heap = heap;
+    public void setPile(CoalPile pile) {
+        this.pile = pile;
     }
 
     public MovementOperation getOperation() {

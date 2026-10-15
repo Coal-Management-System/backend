@@ -8,7 +8,7 @@ import net.jemsit.coal.shared.domain.LabAnalysis;
 import net.jemsit.coal.shared.domain.LabAnalysisValue;
 import net.jemsit.coal.shared.domain.OriginType;
 import net.jemsit.coal.shared.repo.CoalBatchRepository;
-import net.jemsit.coal.shared.repo.CoalHeapRepository;
+import net.jemsit.coal.shared.repo.CoalPileRepository;
 import net.jemsit.coal.shared.repo.LabAnalysisRepository;
 import net.jemsit.coal.shared.repo.LaboratoryRepository;
 import net.jemsit.coal.shared.repo.WarehouseRepository;
@@ -32,7 +32,7 @@ import java.util.UUID;
 public class DashboardService {
 
     private final CoalBatchRepository batches;
-    private final CoalHeapRepository heaps;
+    private final CoalPileRepository piles;
     private final WarehouseRepository warehouses;
     private final LaboratoryRepository labs;
     private final LabAnalysisRepository analyses;
@@ -40,14 +40,14 @@ public class DashboardService {
     private final BigDecimal maxMoisture;
 
     public DashboardService(CoalBatchRepository batches,
-                            CoalHeapRepository heaps,
+                            CoalPileRepository piles,
                             WarehouseRepository warehouses,
                             LaboratoryRepository labs,
                             LabAnalysisRepository analyses,
                             @Value("${coal.quality.max-ash:20}") BigDecimal maxAsh,
                             @Value("${coal.quality.max-moisture:12}") BigDecimal maxMoisture) {
         this.batches = batches;
-        this.heaps = heaps;
+        this.piles = piles;
         this.warehouses = warehouses;
         this.labs = labs;
         this.analyses = analyses;
@@ -103,7 +103,7 @@ public class DashboardService {
                 null,
                 null,
                 all.size(),
-                heaps.count(),
+                piles.count(),
                 warehouses.count(),
                 labs.count());
     }

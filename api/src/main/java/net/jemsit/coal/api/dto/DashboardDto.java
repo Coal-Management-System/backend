@@ -18,7 +18,7 @@ public record DashboardDto(
         BigDecimal costPerTon,
         BigDecimal profitPerTon,
         long batchCount,
-        long heapCount,
+        long pileCount,
         long warehouseCount,
         long labCount) {
 }

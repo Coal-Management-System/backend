@@ -1,6 +1,6 @@
 package net.jemsit.coal.shared.domain;
 
-public enum HeapStatus {
+public enum PileStatus {
     ACTIVE,
     SPLIT,
     MERGED,

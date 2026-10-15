@@ -16,7 +16,7 @@ public final class WarehouseDtos {
             String number,
             String location,
             WarehouseStatus status,
-            long heapCount,
+            long pileCount,
             Instant createdAt) {
     }
 

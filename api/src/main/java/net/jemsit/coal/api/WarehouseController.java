@@ -1,7 +1,7 @@
 package net.jemsit.coal.api;
 
 import jakarta.validation.Valid;
-import net.jemsit.coal.api.dto.HeapDtos.HeapDto;
+import net.jemsit.coal.api.dto.PileDtos.PileDto;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseCreateRequest;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseDto;
 import net.jemsit.coal.api.service.WarehouseService;
@@ -38,8 +38,8 @@ public class WarehouseController {
         return service.create(req);
     }
 
-    @GetMapping("/{id}/heaps")
-    public List<HeapDto> heaps(@PathVariable UUID id) {
-        return service.heaps(id);
+    @GetMapping("/{id}/piles")
+    public List<PileDto> piles(@PathVariable UUID id) {
+        return service.piles(id);
     }
 }

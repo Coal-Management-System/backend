@@ -1,12 +1,12 @@
 package net.jemsit.coal.api.service;
 
-import net.jemsit.coal.api.dto.HeapDtos.HeapDto;
+import net.jemsit.coal.api.dto.PileDtos.PileDto;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseCreateRequest;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseDto;
 import net.jemsit.coal.shared.api.ApiException;
 import net.jemsit.coal.shared.domain.Warehouse;
 import net.jemsit.coal.shared.domain.WarehouseStatus;
-import net.jemsit.coal.shared.repo.CoalHeapRepository;
+import net.jemsit.coal.shared.repo.CoalPileRepository;
 import net.jemsit.coal.shared.repo.WarehouseRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,13 +18,13 @@ import java.util.UUID;
 public class WarehouseService {
 
     private final WarehouseRepository warehouses;
-    private final CoalHeapRepository heaps;
-    private final HeapService heapService;
+    private final CoalPileRepository piles;
+    private final PileService pileService;
 
-    public WarehouseService(WarehouseRepository warehouses, CoalHeapRepository heaps, HeapService heapService) {
+    public WarehouseService(WarehouseRepository warehouses, CoalPileRepository piles, PileService pileService) {
         this.warehouses = warehouses;
-        this.heaps = heaps;
-        this.heapService = heapService;
+        this.piles = piles;
+        this.pileService = pileService;
     }
 
     @Transactional(readOnly = true)
@@ -34,7 +34,7 @@ public class WarehouseService {
                 w.getNumber(),
                 w.getLocation(),
                 w.getStatus(),
-                heaps.findByWarehouseIdOrderByHeapNumberAsc(w.getId()).size(),
+                piles.findByWarehouseIdOrderByPileNumberAsc(w.getId()).size(),
                 w.getCreatedAt())).toList();
     }
 
@@ -53,8 +53,8 @@ public class WarehouseService {
     }
 
     @Transactional(readOnly = true)
-    public List<HeapDto> heaps(UUID warehouseId) {
-        return heaps.findByWarehouseIdOrderByHeapNumberAsc(warehouseId).stream()
-                .map(heapService::toDto).toList();
+    public List<PileDto> piles(UUID warehouseId) {
+        return piles.findByWarehouseIdOrderByPileNumberAsc(warehouseId).stream()
+                .map(pileService::toDto).toList();
     }
 }

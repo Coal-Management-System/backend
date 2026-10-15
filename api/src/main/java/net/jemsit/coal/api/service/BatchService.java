@@ -133,15 +133,15 @@ public class BatchService {
                 b.getLosses(),
                 b.currentRemainder(),
                 b.freeVolume(),
-                b.getHeaps().stream()
-                        .map(h -> h.getWarehouse() == null ? null : h.getWarehouse().getNumber())
+                b.getPiles().stream()
+                        .map(p -> p.getWarehouse() == null ? null : p.getWarehouse().getNumber())
                         .filter(java.util.Objects::nonNull)
                         .distinct()
                         .toList(),
                 b.getSourceBatches().stream().map(CoalBatch::getId).toList(),
                 b.getSourceBatches().stream().map(CoalBatch::getBatchNumber).toList(),
-                b.getHeaps().stream().map(h -> h.getId()).toList(),
-                b.getHeaps().stream().map(h -> h.getHeapNumber()).toList(),
+                b.getPiles().stream().map(p -> p.getId()).toList(),
+                b.getPiles().stream().map(p -> p.getPileNumber()).toList(),
                 b.getCreatedAt());
     }
 

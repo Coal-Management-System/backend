@@ -3,51 +3,51 @@ package net.jemsit.coal.api.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import net.jemsit.coal.shared.domain.HeapStatus;
+import net.jemsit.coal.shared.domain.PileStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-public final class HeapDtos {
+public final class PileDtos {
 
-    private HeapDtos() {
+    private PileDtos() {
     }
 
-    public record HeapDto(
+    public record PileDto(
             UUID id,
-            String heapNumber,
+            String pileNumber,
             BigDecimal volume,
             UUID warehouseId,
             String warehouseNumber,
-            HeapStatus status,
+            PileStatus status,
             String originSource,
             List<UUID> batchIds,
             List<String> batchNumbers,
             Instant createdAt) {
     }
 
-    public record HeapCreateRequest(
-            @NotBlank String heapNumber,
+    public record PileCreateRequest(
+            @NotBlank String pileNumber,
             @NotNull @Positive BigDecimal volume,
             UUID warehouseId,
             String originSource,
             List<UUID> batchIds) {
     }
 
-    public record HeapSplitRequest(
+    public record PileSplitRequest(
             @NotNull @Positive BigDecimal volume,
             UUID toWarehouseId,
             @NotBlank String newBatchNumber,
             Boolean sendImmediately) {
     }
 
-    public record HeapMergeRequest(
-            @NotNull List<UUID> sourceHeapIds,
-            @NotNull UUID targetHeapId) {
+    public record PileMergeRequest(
+            @NotNull List<UUID> sourcePileIds,
+            @NotNull UUID targetPileId) {
     }
 
-    public record HeapTransferRequest(@NotNull UUID toWarehouseId) {
+    public record PileTransferRequest(@NotNull UUID toWarehouseId) {
     }
 }

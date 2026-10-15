@@ -78,10 +78,10 @@ public class CoalBatch extends BaseEntity {
     private Set<CoalBatch> sourceBatches = new LinkedHashSet<>();
 
     @ManyToMany
-    @JoinTable(name = "coal_batch_heap",
+    @JoinTable(name = "coal_batch_pile",
             joinColumns = @JoinColumn(name = "batch_id"),
-            inverseJoinColumns = @JoinColumn(name = "heap_id"))
-    private Set<CoalHeap> heaps = new LinkedHashSet<>();
+            inverseJoinColumns = @JoinColumn(name = "pile_id"))
+    private Set<CoalPile> piles = new LinkedHashSet<>();
 
     public BigDecimal currentRemainder() {
         return initialWeight.subtract(shippedVolume).subtract(losses);
@@ -231,7 +231,7 @@ public class CoalBatch extends BaseEntity {
         return sourceBatches;
     }
 
-    public Set<CoalHeap> getHeaps() {
-        return heaps;
+    public Set<CoalPile> getPiles() {
+        return piles;
     }
 }

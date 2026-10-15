@@ -1,21 +1,21 @@
 package net.jemsit.coal.api.service;
 
-import net.jemsit.coal.api.dto.HeapDtos.HeapCreateRequest;
-import net.jemsit.coal.api.dto.HeapDtos.HeapDto;
-import net.jemsit.coal.api.dto.HeapDtos.HeapMergeRequest;
-import net.jemsit.coal.api.dto.HeapDtos.HeapSplitRequest;
-import net.jemsit.coal.api.dto.HeapDtos.HeapTransferRequest;
+import net.jemsit.coal.api.dto.PileDtos.PileCreateRequest;
+import net.jemsit.coal.api.dto.PileDtos.PileDto;
+import net.jemsit.coal.api.dto.PileDtos.PileMergeRequest;
+import net.jemsit.coal.api.dto.PileDtos.PileSplitRequest;
+import net.jemsit.coal.api.dto.PileDtos.PileTransferRequest;
 import net.jemsit.coal.api.dto.MovementDtos.MovementDto;
 import net.jemsit.coal.shared.api.ApiException;
 import net.jemsit.coal.shared.domain.BatchStatus;
 import net.jemsit.coal.shared.domain.CoalBatch;
-import net.jemsit.coal.shared.domain.CoalHeap;
-import net.jemsit.coal.shared.domain.HeapStatus;
+import net.jemsit.coal.shared.domain.CoalPile;
+import net.jemsit.coal.shared.domain.PileStatus;
 import net.jemsit.coal.shared.domain.Movement;
 import net.jemsit.coal.shared.domain.MovementOperation;
 import net.jemsit.coal.shared.domain.Warehouse;
 import net.jemsit.coal.shared.repo.CoalBatchRepository;
-import net.jemsit.coal.shared.repo.CoalHeapRepository;
+import net.jemsit.coal.shared.repo.CoalPileRepository;
 import net.jemsit.coal.shared.repo.MovementRepository;
 import net.jemsit.coal.shared.repo.WarehouseRepository;
 import org.springframework.stereotype.Service;
@@ -26,20 +26,20 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class HeapService {
+public class PileService {
 
-    private final CoalHeapRepository heaps;
+    private final CoalPileRepository piles;
     private final CoalBatchRepository batches;
     private final WarehouseRepository warehouses;
     private final MovementRepository movements;
     private final MovementService movementService;
 
-    public HeapService(CoalHeapRepository heaps,
+    public PileService(CoalPileRepository piles,
                        CoalBatchRepository batches,
                        WarehouseRepository warehouses,
                        MovementRepository movements,
                        MovementService movementService) {
-        this.heaps = heaps;
+        this.piles = piles;
         this.batches = batches;
         this.warehouses = warehouses;
         this.movements = movements;
@@ -47,53 +47,53 @@ public class HeapService {
     }
 
     @Transactional(readOnly = true)
-    public List<HeapDto> list() {
-        return heaps.findAllByOrderByHeapNumberAsc().stream().map(this::toDto).toList();
+    public List<PileDto> list() {
+        return piles.findAllByOrderByPileNumberAsc().stream().map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)
-    public HeapDto get(UUID id) {
+    public PileDto get(UUID id) {
         return toDto(load(id));
     }
 
     @Transactional(readOnly = true)
-    public List<MovementDto> history(UUID heapId) {
-        load(heapId);
-        return movements.findByHeapIdOrderByCreatedAtDesc(heapId).stream()
+    public List<MovementDto> history(UUID pileId) {
+        load(pileId);
+        return movements.findByPileIdOrderByCreatedAtDesc(pileId).stream()
                 .map(movementService::toDto).toList();
     }
 
     @Transactional
-    public HeapDto create(HeapCreateRequest req) {
-        if (heaps.existsByHeapNumber(req.heapNumber())) {
-            throw ApiException.conflict("Куча с номером " + req.heapNumber() + " уже существует");
+    public PileDto create(PileCreateRequest req) {
+        if (piles.existsByPileNumber(req.pileNumber())) {
+            throw ApiException.conflict("Штабель с номером " + req.pileNumber() + " уже существует");
         }
-        CoalHeap heap = new CoalHeap();
-        heap.setHeapNumber(req.heapNumber());
-        heap.setVolume(req.volume());
-        heap.setWarehouse(req.warehouseId() == null ? null : warehouses.findById(req.warehouseId())
+        CoalPile pile = new CoalPile();
+        pile.setPileNumber(req.pileNumber());
+        pile.setVolume(req.volume());
+        pile.setWarehouse(req.warehouseId() == null ? null : warehouses.findById(req.warehouseId())
                 .orElseThrow(() -> ApiException.notFound("Склад не найден: " + req.warehouseId())));
-        heap.setOriginSource(req.originSource());
-        heap.setStatus(HeapStatus.ACTIVE);
+        pile.setOriginSource(req.originSource());
+        pile.setStatus(PileStatus.ACTIVE);
         if (req.batchIds() != null) {
             req.batchIds().forEach(id -> {
                 CoalBatch batch = batches.findById(id)
                         .orElseThrow(() -> ApiException.notFound("Партия не найдена: " + id));
-                batch.getHeaps().add(heap);
-                heap.getBatches().add(batch);
+                batch.getPiles().add(pile);
+                pile.getBatches().add(batch);
             });
         }
-        CoalHeap saved = heaps.save(heap);
+        CoalPile saved = piles.save(pile);
         recordMovement(saved, null, MovementOperation.PILE_CREATED, saved.getVolume(),
                 saved.getOriginSource(), warehouseNumber(saved));
         return toDto(saved);
     }
 
     @Transactional
-    public HeapDto split(UUID heapId, HeapSplitRequest req) {
-        CoalHeap source = load(heapId);
+    public PileDto split(UUID pileId, PileSplitRequest req) {
+        CoalPile source = load(pileId);
         if (req.volume().compareTo(source.getVolume()) > 0) {
-            throw ApiException.badRequest("Объем отделения больше объема кучи");
+            throw ApiException.badRequest("Объем отделения больше объема штабеля");
         }
         if (batches.existsByBatchNumber(req.newBatchNumber())) {
             throw ApiException.conflict("Партия с номером " + req.newBatchNumber() + " уже существует");
@@ -130,44 +130,44 @@ public class HeapService {
         }
         batches.save(newBatch);
 
-        CoalHeap newHeap = new CoalHeap();
-        newHeap.setHeapNumber(nextSplitNumber(source.getHeapNumber()));
-        newHeap.setVolume(req.volume());
-        newHeap.setWarehouse(target);
-        newHeap.setOriginSource(source.getOriginSource());
-        newHeap.setStatus(HeapStatus.ACTIVE);
-        newBatch.getHeaps().add(newHeap);
-        newHeap.getBatches().add(newBatch);
-        heaps.save(newHeap);
+        CoalPile newPile = new CoalPile();
+        newPile.setPileNumber(nextSplitNumber(source.getPileNumber()));
+        newPile.setVolume(req.volume());
+        newPile.setWarehouse(target);
+        newPile.setOriginSource(source.getOriginSource());
+        newPile.setStatus(PileStatus.ACTIVE);
+        newBatch.getPiles().add(newPile);
+        newPile.getBatches().add(newBatch);
+        piles.save(newPile);
 
         source.setVolume(source.getVolume().subtract(req.volume()));
         if (source.getVolume().compareTo(BigDecimal.ZERO) == 0) {
-            source.setStatus(HeapStatus.EMPTY);
+            source.setStatus(PileStatus.EMPTY);
         }
 
-        recordMovement(newHeap, newBatch, MovementOperation.PILE_SPLIT, req.volume(),
-                warehouseNumber(source), warehouseNumber(newHeap));
-        return toDto(newHeap);
+        recordMovement(newPile, newBatch, MovementOperation.PILE_SPLIT, req.volume(),
+                warehouseNumber(source), warehouseNumber(newPile));
+        return toDto(newPile);
     }
 
     @Transactional
-    public HeapDto merge(HeapMergeRequest req) {
-        CoalHeap target = load(req.targetHeapId());
-        for (UUID sourceId : req.sourceHeapIds()) {
-            if (sourceId.equals(req.targetHeapId())) {
+    public PileDto merge(PileMergeRequest req) {
+        CoalPile target = load(req.targetPileId());
+        for (UUID sourceId : req.sourcePileIds()) {
+            if (sourceId.equals(req.targetPileId())) {
                 continue;
             }
-            CoalHeap source = load(sourceId);
+            CoalPile source = load(sourceId);
             BigDecimal moved = source.getVolume();
             target.setVolume(target.getVolume().add(moved));
             for (CoalBatch batch : List.copyOf(source.getBatches())) {
-                batch.getHeaps().remove(source);
-                batch.getHeaps().add(target);
+                batch.getPiles().remove(source);
+                batch.getPiles().add(target);
             }
             target.getBatches().addAll(source.getBatches());
             source.getBatches().clear();
             source.setVolume(BigDecimal.ZERO);
-            source.setStatus(HeapStatus.MERGED);
+            source.setStatus(PileStatus.MERGED);
             recordMovement(target, null, MovementOperation.PILE_MERGED, moved,
                     warehouseNumber(source), warehouseNumber(target));
         }
@@ -175,19 +175,19 @@ public class HeapService {
     }
 
     @Transactional
-    public HeapDto transfer(UUID heapId, HeapTransferRequest req) {
-        CoalHeap heap = load(heapId);
-        Warehouse from = heap.getWarehouse();
+    public PileDto transfer(UUID pileId, PileTransferRequest req) {
+        CoalPile pile = load(pileId);
+        Warehouse from = pile.getWarehouse();
         Warehouse to = warehouses.findById(req.toWarehouseId())
                 .orElseThrow(() -> ApiException.notFound("Склад не найден: " + req.toWarehouseId()));
-        heap.setWarehouse(to);
-        recordMovement(heap, null, MovementOperation.PILE_TRANSFERRED, heap.getVolume(),
+        pile.setWarehouse(to);
+        recordMovement(pile, null, MovementOperation.PILE_TRANSFERRED, pile.getVolume(),
                 warehouseNumber(from), warehouseNumber(to));
-        return toDto(heap);
+        return toDto(pile);
     }
 
-    public CoalHeap load(UUID id) {
-        return heaps.findById(id).orElseThrow(() -> ApiException.notFound("Куча не найдена: " + id));
+    public CoalPile load(UUID id) {
+        return piles.findById(id).orElseThrow(() -> ApiException.notFound("Штабель не найден: " + id));
     }
 
     private String nextSplitNumber(String base) {
@@ -195,42 +195,42 @@ public class HeapService {
         String candidate;
         do {
             candidate = base + "-S" + seq++;
-        } while (heaps.existsByHeapNumber(candidate));
+        } while (piles.existsByPileNumber(candidate));
         return candidate;
     }
 
-    private String warehouseNumber(CoalHeap heap) {
-        return warehouseNumber(heap.getWarehouse());
+    private String warehouseNumber(CoalPile pile) {
+        return warehouseNumber(pile.getWarehouse());
     }
 
     private String warehouseNumber(Warehouse warehouse) {
         return warehouse == null ? null : warehouse.getNumber();
     }
 
-    private void recordMovement(CoalHeap heap, CoalBatch batch, MovementOperation operation,
+    private void recordMovement(CoalPile pile, CoalBatch batch, MovementOperation operation,
                                 BigDecimal volume, String from, String to) {
         Movement m = new Movement();
-        m.setHeap(heap);
+        m.setPile(pile);
         m.setBatch(batch);
         m.setOperation(operation);
         m.setVolume(volume);
         m.setFromLocation(from);
         m.setToLocation(to);
-        m.setOriginSource(heap.getOriginSource());
+        m.setOriginSource(pile.getOriginSource());
         movements.save(m);
     }
 
-    public HeapDto toDto(CoalHeap h) {
-        return new HeapDto(
-                h.getId(),
-                h.getHeapNumber(),
-                h.getVolume(),
-                h.getWarehouse() == null ? null : h.getWarehouse().getId(),
-                h.getWarehouse() == null ? null : h.getWarehouse().getNumber(),
-                h.getStatus(),
-                h.getOriginSource(),
-                h.getBatches().stream().map(CoalBatch::getId).toList(),
-                h.getBatches().stream().map(CoalBatch::getBatchNumber).toList(),
-                h.getCreatedAt());
+    public PileDto toDto(CoalPile p) {
+        return new PileDto(
+                p.getId(),
+                p.getPileNumber(),
+                p.getVolume(),
+                p.getWarehouse() == null ? null : p.getWarehouse().getId(),
+                p.getWarehouse() == null ? null : p.getWarehouse().getNumber(),
+                p.getStatus(),
+                p.getOriginSource(),
+                p.getBatches().stream().map(CoalBatch::getId).toList(),
+                p.getBatches().stream().map(CoalBatch::getBatchNumber).toList(),
+                p.getCreatedAt());
     }
 }

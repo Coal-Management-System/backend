@@ -1,0 +1,77 @@
+databaseChangeLog:
+  # Terminology change: what the code called a "heap" is now a "pile", schema included.
+  # 0001/0002 are already applied on existing databases, so they stay untouched and the
+  # rename lives here as a new changeset.
+  - changeSet:
+      id: 0003-rename-heap-to-pile
+      author: jemsit
+      comment: Rename coal_heap/coal_batch_heap and their heap_* columns to pile
+      changes:
+        - renameTable:
+            oldTableName: coal_heap
+            newTableName: coal_pile
+        - renameColumn:
+            tableName: coal_pile
+            oldColumnName: heap_number
+            newColumnName: pile_number
+            columnDataType: "varchar(50)"
+        - renameTable:
+            oldTableName: coal_batch_heap
+            newTableName: coal_batch_pile
+        - renameColumn:
+            tableName: coal_batch_pile
+            oldColumnName: heap_id
+            newColumnName: pile_id
+            columnDataType: uuid
+        - renameColumn:
+            tableName: coal_movement
+            oldColumnName: heap_id
+            newColumnName: pile_id
+            columnDataType: uuid
+        # Postgres keeps constraint names when a table is renamed, so the heap_* names
+        # would survive on the pile tables. Liquibase has no renameConstraint change,
+        # hence raw SQL; RENAME CONSTRAINT also renames the index backing a PK/unique.
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            sql: |
+              ALTER TABLE coal_pile RENAME CONSTRAINT coal_heap_pkey TO coal_pile_pkey;
+              ALTER TABLE coal_pile RENAME CONSTRAINT coal_heap_heap_number_key TO coal_pile_pile_number_key;
+              ALTER TABLE coal_pile RENAME CONSTRAINT fk_heap_warehouse TO fk_pile_warehouse;
+              ALTER TABLE coal_batch_pile RENAME CONSTRAINT coal_batch_heap_pkey TO coal_batch_pile_pkey;
+              ALTER TABLE coal_batch_pile RENAME CONSTRAINT fk_batch_heap_batch TO fk_batch_pile_batch;
+              ALTER TABLE coal_batch_pile RENAME CONSTRAINT fk_batch_heap_heap TO fk_batch_pile_pile;
+              ALTER TABLE coal_movement RENAME CONSTRAINT fk_movement_heap TO fk_movement_pile;
+      rollback:
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            sql: |
+              ALTER TABLE coal_movement RENAME CONSTRAINT fk_movement_pile TO fk_movement_heap;
+              ALTER TABLE coal_batch_pile RENAME CONSTRAINT fk_batch_pile_pile TO fk_batch_heap_heap;
+              ALTER TABLE coal_batch_pile RENAME CONSTRAINT fk_batch_pile_batch TO fk_batch_heap_batch;
+              ALTER TABLE coal_batch_pile RENAME CONSTRAINT coal_batch_pile_pkey TO coal_batch_heap_pkey;
+              ALTER TABLE coal_pile RENAME CONSTRAINT fk_pile_warehouse TO fk_heap_warehouse;
+              ALTER TABLE coal_pile RENAME CONSTRAINT coal_pile_pile_number_key TO coal_heap_heap_number_key;
+              ALTER TABLE coal_pile RENAME CONSTRAINT coal_pile_pkey TO coal_heap_pkey;
+        - renameColumn:
+            tableName: coal_movement
+            oldColumnName: pile_id
+            newColumnName: heap_id
+            columnDataType: uuid
+        - renameColumn:
+            tableName: coal_batch_pile
+            oldColumnName: pile_id
+            newColumnName: heap_id
+            columnDataType: uuid
+        - renameTable:
+            oldTableName: coal_batch_pile
+            newTableName: coal_batch_heap
+        - renameColumn:
+            tableName: coal_pile
+            oldColumnName: pile_number
+            newColumnName: heap_number
+            columnDataType: "varchar(50)"
+        - renameTable:
+            oldTableName: coal_pile
+            newTableName: coal_heap

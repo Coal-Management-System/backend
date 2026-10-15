@@ -4,7 +4,7 @@ import net.jemsit.coal.api.dto.MovementDtos.MovementCreateRequest;
 import net.jemsit.coal.api.dto.MovementDtos.MovementDto;
 import net.jemsit.coal.shared.domain.Movement;
 import net.jemsit.coal.shared.repo.CoalBatchRepository;
-import net.jemsit.coal.shared.repo.CoalHeapRepository;
+import net.jemsit.coal.shared.repo.CoalPileRepository;
 import net.jemsit.coal.shared.repo.MovementRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,16 +17,16 @@ public class MovementService {
 
     private final MovementRepository movements;
     private final CoalBatchRepository batches;
-    private final CoalHeapRepository heaps;
+    private final CoalPileRepository piles;
     private final String qrBaseUrl;
 
     public MovementService(MovementRepository movements,
                            CoalBatchRepository batches,
-                           CoalHeapRepository heaps,
+                           CoalPileRepository piles,
                            @Value("${coal.qr.base-url:http://localhost:5174}") String qrBaseUrl) {
         this.movements = movements;
         this.batches = batches;
-        this.heaps = heaps;
+        this.piles = piles;
         this.qrBaseUrl = qrBaseUrl;
     }
 
@@ -41,8 +41,8 @@ public class MovementService {
         if (req.batchId() != null) {
             m.setBatch(batches.findById(req.batchId()).orElseThrow());
         }
-        if (req.heapId() != null) {
-            m.setHeap(heaps.findById(req.heapId()).orElseThrow());
+        if (req.pileId() != null) {
+            m.setPile(piles.findById(req.pileId()).orElseThrow());
         }
         m.setOperation(req.operation());
         m.setVolume(req.volume());
@@ -57,8 +57,8 @@ public class MovementService {
                 m.getId(),
                 m.getBatch() == null ? null : m.getBatch().getId(),
                 m.getBatch() == null ? null : m.getBatch().getBatchNumber(),
-                m.getHeap() == null ? null : m.getHeap().getId(),
-                m.getHeap() == null ? null : m.getHeap().getHeapNumber(),
+                m.getPile() == null ? null : m.getPile().getId(),
+                m.getPile() == null ? null : m.getPile().getPileNumber(),
                 m.getOperation(),
                 m.getVolume(),
                 m.getFromLocation(),

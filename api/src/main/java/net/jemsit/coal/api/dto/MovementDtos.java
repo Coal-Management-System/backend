@@ -17,8 +17,8 @@ public final class MovementDtos {
             UUID id,
             UUID batchId,
             String batchNumber,
-            UUID heapId,
-            String heapNumber,
+            UUID pileId,
+            String pileNumber,
             MovementOperation operation,
             BigDecimal volume,
             String fromLocation,
@@ -30,7 +30,7 @@ public final class MovementDtos {
 
     public record MovementCreateRequest(
             UUID batchId,
-            UUID heapId,
+            UUID pileId,
             @NotNull MovementOperation operation,
             @NotNull @Positive BigDecimal volume,
             String fromLocation,

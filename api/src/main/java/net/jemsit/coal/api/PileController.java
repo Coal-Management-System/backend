@@ -1,13 +1,13 @@
 package net.jemsit.coal.api;
 
 import jakarta.validation.Valid;
-import net.jemsit.coal.api.dto.HeapDtos.HeapCreateRequest;
-import net.jemsit.coal.api.dto.HeapDtos.HeapDto;
-import net.jemsit.coal.api.dto.HeapDtos.HeapMergeRequest;
-import net.jemsit.coal.api.dto.HeapDtos.HeapSplitRequest;
-import net.jemsit.coal.api.dto.HeapDtos.HeapTransferRequest;
+import net.jemsit.coal.api.dto.PileDtos.PileCreateRequest;
+import net.jemsit.coal.api.dto.PileDtos.PileDto;
+import net.jemsit.coal.api.dto.PileDtos.PileMergeRequest;
+import net.jemsit.coal.api.dto.PileDtos.PileSplitRequest;
+import net.jemsit.coal.api.dto.PileDtos.PileTransferRequest;
 import net.jemsit.coal.api.dto.MovementDtos.MovementDto;
-import net.jemsit.coal.api.service.HeapService;
+import net.jemsit.coal.api.service.PileService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,28 +21,28 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/heaps")
-public class HeapController {
+@RequestMapping("/api/piles")
+public class PileController {
 
-    private final HeapService service;
+    private final PileService service;
 
-    public HeapController(HeapService service) {
+    public PileController(PileService service) {
         this.service = service;
     }
 
     @GetMapping
-    public List<HeapDto> list() {
+    public List<PileDto> list() {
         return service.list();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public HeapDto create(@Valid @RequestBody HeapCreateRequest req) {
+    public PileDto create(@Valid @RequestBody PileCreateRequest req) {
         return service.create(req);
     }
 
     @GetMapping("/{id}")
-    public HeapDto get(@PathVariable UUID id) {
+    public PileDto get(@PathVariable UUID id) {
         return service.get(id);
     }
 
@@ -53,17 +53,17 @@ public class HeapController {
 
     @PostMapping("/{id}/split")
     @ResponseStatus(HttpStatus.CREATED)
-    public HeapDto split(@PathVariable UUID id, @Valid @RequestBody HeapSplitRequest req) {
+    public PileDto split(@PathVariable UUID id, @Valid @RequestBody PileSplitRequest req) {
         return service.split(id, req);
     }
 
     @PostMapping("/merge")
-    public HeapDto merge(@Valid @RequestBody HeapMergeRequest req) {
+    public PileDto merge(@Valid @RequestBody PileMergeRequest req) {
         return service.merge(req);
     }
 
     @PostMapping("/{id}/transfer")
-    public HeapDto transfer(@PathVariable UUID id, @Valid @RequestBody HeapTransferRequest req) {
+    public PileDto transfer(@PathVariable UUID id, @Valid @RequestBody PileTransferRequest req) {
         return service.transfer(id, req);
     }
 }

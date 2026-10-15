@@ -15,11 +15,11 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "coal_heap")
-public class CoalHeap extends BaseEntity {
+@Table(name = "coal_pile")
+public class CoalPile extends BaseEntity {
 
-    @Column(name = "heap_number", nullable = false, unique = true, length = 50)
-    private String heapNumber;
+    @Column(name = "pile_number", nullable = false, unique = true, length = 50)
+    private String pileNumber;
 
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal volume;
@@ -30,20 +30,20 @@ public class CoalHeap extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private HeapStatus status = HeapStatus.ACTIVE;
+    private PileStatus status = PileStatus.ACTIVE;
 
     @Column(name = "origin_source", length = 200)
     private String originSource;
 
-    @ManyToMany(mappedBy = "heaps")
+    @ManyToMany(mappedBy = "piles")
     private Set<CoalBatch> batches = new LinkedHashSet<>();
 
-    public String getHeapNumber() {
-        return heapNumber;
+    public String getPileNumber() {
+        return pileNumber;
     }
 
-    public void setHeapNumber(String heapNumber) {
-        this.heapNumber = heapNumber;
+    public void setPileNumber(String pileNumber) {
+        this.pileNumber = pileNumber;
     }
 
     public BigDecimal getVolume() {
@@ -62,11 +62,11 @@ public class CoalHeap extends BaseEntity {
         this.warehouse = warehouse;
     }
 
-    public HeapStatus getStatus() {
+    public PileStatus getStatus() {
         return status;
     }
 
-    public void setStatus(HeapStatus status) {
+    public void setStatus(PileStatus status) {
         this.status = status;
     }
 

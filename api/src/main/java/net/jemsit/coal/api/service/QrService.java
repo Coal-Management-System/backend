@@ -6,7 +6,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import net.jemsit.coal.shared.api.ApiException;
 import net.jemsit.coal.shared.repo.CoalBatchRepository;
-import net.jemsit.coal.shared.repo.CoalHeapRepository;
+import net.jemsit.coal.shared.repo.CoalPileRepository;
 import net.jemsit.coal.shared.repo.MovementRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,16 +17,16 @@ import java.util.UUID;
 public class QrService {
 
     private final CoalBatchRepository batches;
-    private final CoalHeapRepository heaps;
+    private final CoalPileRepository piles;
     private final MovementRepository movements;
     private final String baseUrl;
 
     public QrService(CoalBatchRepository batches,
-                     CoalHeapRepository heaps,
+                     CoalPileRepository piles,
                      MovementRepository movements,
                      @Value("${coal.qr.base-url:http://localhost:5174}") String baseUrl) {
         this.batches = batches;
-        this.heaps = heaps;
+        this.piles = piles;
         this.movements = movements;
         this.baseUrl = baseUrl;
     }
@@ -35,8 +35,8 @@ public class QrService {
         String label = switch (type) {
             case "batch" -> batches.findById(id)
                     .orElseThrow(() -> ApiException.notFound("Партия не найдена: " + id)).getBatchNumber();
-            case "heap" -> heaps.findById(id)
-                    .orElseThrow(() -> ApiException.notFound("Куча не найдена: " + id)).getHeapNumber();
+            case "pile" -> piles.findById(id)
+                    .orElseThrow(() -> ApiException.notFound("Штабель не найден: " + id)).getPileNumber();
             case "movement" -> movements.findById(id)
                     .orElseThrow(() -> ApiException.notFound("Движение не найдено: " + id)).getId().toString();
             default -> throw ApiException.badRequest("Неизвестный тип QR: " + type);
