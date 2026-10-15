@@ -14,10 +14,14 @@ import net.jemsit.coal.shared.domain.BatchStatus;
 import net.jemsit.coal.shared.domain.OriginType;
 import net.jemsit.coal.shared.repo.CoalBatchRepository;
 import net.jemsit.coal.shared.repo.LabAnalysisRepository;
+import net.jemsit.coal.shared.repo.MovementRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,10 +32,16 @@ public class BatchService {
 
     private final CoalBatchRepository batches;
     private final LabAnalysisRepository analyses;
+    private final MovementRepository movements;
+    private final String deleteKey;
 
-    public BatchService(CoalBatchRepository batches, LabAnalysisRepository analyses) {
+    public BatchService(CoalBatchRepository batches, LabAnalysisRepository analyses,
+                        MovementRepository movements,
+                        @Value("${coal.admin.delete-key:}") String deleteKey) {
         this.batches = batches;
         this.analyses = analyses;
+        this.movements = movements;
+        this.deleteKey = deleteKey;
     }
 
     @Transactional(readOnly = true)
@@ -87,6 +97,39 @@ public class BatchService {
         b.setMinedAt(req.minedAt());
         b.setInitialWeight(req.initialWeight());
         return toDto(batches.save(b));
+    }
+
+    /**
+     * Permanently deletes a batch. Requires the admin key, the batch number typed back
+     * as confirmation, and a batch with nothing referencing it.
+     */
+    @Transactional
+    public void delete(UUID id, String adminKey, String confirmNumber) {
+        if (deleteKey.isBlank()) {
+            throw ApiException.forbidden("Удаление партий отключено на сервере");
+        }
+        if (adminKey == null || !MessageDigest.isEqual(
+                deleteKey.getBytes(StandardCharsets.UTF_8), adminKey.getBytes(StandardCharsets.UTF_8))) {
+            throw ApiException.forbidden("Неверный ключ администратора");
+        }
+        CoalBatch b = load(id);
+        if (!b.getBatchNumber().equals(confirmNumber)) {
+            throw ApiException.badRequest("Номер партии для подтверждения не совпадает");
+        }
+        if (!b.getPiles().isEmpty()) {
+            throw ApiException.conflict("Партия находится в штабелях, удаление невозможно");
+        }
+        if (movements.existsByBatchId(id)) {
+            throw ApiException.conflict("По партии есть движения, удаление невозможно");
+        }
+        if (analyses.existsByBatchId(id)) {
+            throw ApiException.conflict("По партии есть лабораторные анализы, удаление невозможно");
+        }
+        if (batches.existsBySourceBatchesId(id)) {
+            throw ApiException.conflict("Партия является источником других партий, удаление невозможно");
+        }
+        b.getSourceBatches().clear();
+        batches.delete(b);
     }
 
     @Transactional(readOnly = true)

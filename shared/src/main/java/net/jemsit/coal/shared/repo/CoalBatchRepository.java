@@ -20,6 +20,8 @@ public interface CoalBatchRepository extends JpaRepository<CoalBatch, UUID> {
 
     List<CoalBatch> findAllByOrderByBatchNumberAsc();
 
+    boolean existsBySourceBatchesId(UUID sourceBatchId);
+
     @Query("select coalesce(sum(b.initialWeight), 0) from CoalBatch b "
             + "where b.originType = :origin and b.minedAt >= :from")
     BigDecimal sumInitialWeightMinedAfter(@Param("origin") OriginType origin, @Param("from") Instant from);

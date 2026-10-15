@@ -22,6 +22,9 @@ management:
         include: health,info
 
 coal:
+  admin:
+    # Key required to delete batches (X-Admin-Key header). Empty disables deletion.
+    delete-key: ${COAL_ADMIN_DELETE_KEY:tetris}
   qr:
     base-url: http://localhost:5174
   quality:

@@ -11,4 +11,6 @@ public interface MovementRepository extends JpaRepository<Movement, UUID> {
     List<Movement> findAllByOrderByCreatedAtDesc();
 
     List<Movement> findByPileIdOrderByCreatedAtDesc(UUID pileId);
+
+    boolean existsByBatchId(UUID batchId);
 }
