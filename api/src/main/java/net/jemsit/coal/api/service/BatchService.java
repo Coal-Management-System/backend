@@ -4,7 +4,10 @@ import net.jemsit.coal.api.dto.BatchDtos.BatchCreateRequest;
 import net.jemsit.coal.api.dto.BatchDtos.BatchDto;
 import net.jemsit.coal.api.dto.BatchDtos.BatchUpdateRequest;
 import net.jemsit.coal.api.dto.BatchDtos.QualityHistoryRow;
+import net.jemsit.coal.api.dto.LabDtos.AnalysisDto;
 import net.jemsit.coal.api.dto.LabDtos.AnalysisValueDto;
+import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
+import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.shared.api.ApiException;
 import net.jemsit.coal.shared.domain.CoalBatch;
 import net.jemsit.coal.shared.domain.Indicator;
@@ -16,6 +19,8 @@ import net.jemsit.coal.shared.repo.CoalBatchRepository;
 import net.jemsit.coal.shared.repo.LabAnalysisRepository;
 import net.jemsit.coal.shared.repo.MovementRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,20 +38,35 @@ public class BatchService {
     private final CoalBatchRepository batches;
     private final LabAnalysisRepository analyses;
     private final MovementRepository movements;
+    private final LabService labService;
     private final String deleteKey;
 
     public BatchService(CoalBatchRepository batches, LabAnalysisRepository analyses,
-                        MovementRepository movements,
+                        MovementRepository movements, LabService labService,
                         @Value("${coal.admin.delete-key:}") String deleteKey) {
         this.batches = batches;
         this.analyses = analyses;
         this.movements = movements;
+        this.labService = labService;
         this.deleteKey = deleteKey;
     }
 
     @Transactional(readOnly = true)
-    public List<BatchDto> list() {
-        return batches.findAllByOrderByBatchNumberAsc().stream().map(this::toDto).toList();
+    public PageResponse<BatchDto> list(Pageable pageable) {
+        return PageResponse.of(batches.findAll(pageable), this::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OptionDto> options() {
+        return batches.findAll(Sort.by("batchNumber", "id")).stream()
+                .map(b -> new OptionDto(b.getId(), b.getBatchNumber()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public BatchDto byNumber(String number) {
+        return toDto(batches.findByBatchNumberIgnoreCase(number)
+                .orElseThrow(() -> ApiException.notFound("Партия «" + number + "» не найдена")));
     }
 
     @Transactional(readOnly = true)
@@ -130,6 +150,14 @@ public class BatchService {
         }
         b.getSourceBatches().clear();
         batches.delete(b);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnalysisDto> analysesOf(UUID batchId) {
+        load(batchId);
+        return analyses.findByBatchIdOrderByAnalysisDateAsc(batchId).stream()
+                .map(labService::toDto)
+                .toList();
     }
 
     @Transactional(readOnly = true)

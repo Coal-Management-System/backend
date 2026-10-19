@@ -5,6 +5,8 @@ import net.jemsit.coal.api.dto.LabDtos.AnalysisDto;
 import net.jemsit.coal.api.dto.LabDtos.AnalysisValueInput;
 import net.jemsit.coal.api.dto.LabDtos.LabCreateRequest;
 import net.jemsit.coal.api.dto.LabDtos.LabDto;
+import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
+import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.shared.api.ApiException;
 import net.jemsit.coal.shared.domain.AnalysisStage;
 import net.jemsit.coal.shared.domain.AnalysisStatus;
@@ -14,11 +16,12 @@ import net.jemsit.coal.shared.domain.Laboratory;
 import net.jemsit.coal.shared.repo.CoalBatchRepository;
 import net.jemsit.coal.shared.repo.LabAnalysisRepository;
 import net.jemsit.coal.shared.repo.LaboratoryRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class LabService {
@@ -34,9 +37,15 @@ public class LabService {
     }
 
     @Transactional(readOnly = true)
-    public List<LabDto> labs() {
-        return labs.findAllByOrderByNameAsc().stream()
-                .map(l -> new LabDto(l.getId(), l.getName())).toList();
+    public PageResponse<LabDto> labs(Pageable pageable) {
+        return PageResponse.of(labs.findAll(pageable), l -> new LabDto(l.getId(), l.getName()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OptionDto> options() {
+        return labs.findAll(Sort.by("name", "id")).stream()
+                .map(l -> new OptionDto(l.getId(), l.getName()))
+                .toList();
     }
 
     @Transactional
@@ -47,11 +56,8 @@ public class LabService {
     }
 
     @Transactional(readOnly = true)
-    public List<AnalysisDto> analyses(UUID batchId) {
-        List<LabAnalysis> list = batchId == null
-                ? analyses.findAllByOrderByAnalysisDateDesc()
-                : analyses.findByBatchIdOrderByAnalysisDateAsc(batchId);
-        return list.stream().map(this::toDto).toList();
+    public PageResponse<AnalysisDto> analyses(Pageable pageable) {
+        return PageResponse.of(analyses.findAll(pageable), this::toDto);
     }
 
     @Transactional
@@ -81,7 +87,7 @@ public class LabService {
         return toDto(analyses.save(a));
     }
 
-    private AnalysisDto toDto(LabAnalysis a) {
+    public AnalysisDto toDto(LabAnalysis a) {
         return new AnalysisDto(
                 a.getId(),
                 a.getSampleNumber(),

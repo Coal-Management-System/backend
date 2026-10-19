@@ -13,7 +13,7 @@ public interface CoalPileRepository extends JpaRepository<CoalPile, UUID> {
 
     boolean existsByPileNumber(String pileNumber);
 
-    List<CoalPile> findAllByOrderByPileNumberAsc();
-
     List<CoalPile> findByWarehouseIdOrderByPileNumberAsc(UUID warehouseId);
+
+    long countByWarehouseId(UUID warehouseId);
 }

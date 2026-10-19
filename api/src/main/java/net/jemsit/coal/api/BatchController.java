@@ -5,7 +5,12 @@ import net.jemsit.coal.api.dto.BatchDtos.BatchCreateRequest;
 import net.jemsit.coal.api.dto.BatchDtos.BatchDto;
 import net.jemsit.coal.api.dto.BatchDtos.BatchUpdateRequest;
 import net.jemsit.coal.api.dto.BatchDtos.QualityHistoryRow;
+import net.jemsit.coal.api.dto.LabDtos.AnalysisDto;
+import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
+import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.api.service.BatchService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,8 +38,20 @@ public class BatchController {
     }
 
     @GetMapping
-    public List<BatchDto> list() {
-        return service.list();
+    public PageResponse<BatchDto> list(
+            @PageableDefault(size = 10, sort = {"batchNumber", "id"}) Pageable pageable) {
+        return service.list(pageable);
+    }
+
+    // Literal path segments outrank the /{id} template, so these never reach the UUID converter.
+    @GetMapping("/options")
+    public List<OptionDto> options() {
+        return service.options();
+    }
+
+    @GetMapping("/by-number/{number}")
+    public BatchDto byNumber(@PathVariable String number) {
+        return service.byNumber(number);
     }
 
     @PostMapping
@@ -64,5 +81,10 @@ public class BatchController {
     @GetMapping("/{id}/quality-history")
     public List<QualityHistoryRow> qualityHistory(@PathVariable UUID id) {
         return service.qualityHistory(id);
+    }
+
+    @GetMapping("/{id}/analyses")
+    public List<AnalysisDto> analyses(@PathVariable UUID id) {
+        return service.analysesOf(id);
     }
 }

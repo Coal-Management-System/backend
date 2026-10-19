@@ -6,6 +6,8 @@ import net.jemsit.coal.api.dto.PileDtos.PileMergeRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileSplitRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileTransferRequest;
 import net.jemsit.coal.api.dto.MovementDtos.MovementDto;
+import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
+import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.shared.api.ApiException;
 import net.jemsit.coal.shared.domain.BatchStatus;
 import net.jemsit.coal.shared.domain.CoalBatch;
@@ -18,6 +20,8 @@ import net.jemsit.coal.shared.repo.CoalBatchRepository;
 import net.jemsit.coal.shared.repo.CoalPileRepository;
 import net.jemsit.coal.shared.repo.MovementRepository;
 import net.jemsit.coal.shared.repo.WarehouseRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,8 +51,15 @@ public class PileService {
     }
 
     @Transactional(readOnly = true)
-    public List<PileDto> list() {
-        return piles.findAllByOrderByPileNumberAsc().stream().map(this::toDto).toList();
+    public PageResponse<PileDto> list(Pageable pageable) {
+        return PageResponse.of(piles.findAll(pageable), this::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public List<OptionDto> options() {
+        return piles.findAll(Sort.by("pileNumber", "id")).stream()
+                .map(p -> new OptionDto(p.getId(), p.getPileNumber()))
+                .toList();
     }
 
     @Transactional(readOnly = true)

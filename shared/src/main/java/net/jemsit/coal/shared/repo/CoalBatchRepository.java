@@ -8,17 +8,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface CoalBatchRepository extends JpaRepository<CoalBatch, UUID> {
 
-    Optional<CoalBatch> findByBatchNumber(String batchNumber);
+    Optional<CoalBatch> findByBatchNumberIgnoreCase(String batchNumber);
 
     boolean existsByBatchNumber(String batchNumber);
-
-    List<CoalBatch> findAllByOrderByBatchNumberAsc();
 
     boolean existsBySourceBatchesId(UUID sourceBatchId);
 

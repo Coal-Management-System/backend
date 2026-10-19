@@ -1,6 +1,11 @@
 spring:
   application:
     name: coal-transport
+  data:
+    web:
+      pageable:
+        default-page-size: 10
+        max-page-size: 100
   datasource:
     url: jdbc:postgresql://localhost:5434/coal
     username: coal

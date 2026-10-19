@@ -7,7 +7,11 @@ import net.jemsit.coal.api.dto.PileDtos.PileMergeRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileSplitRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileTransferRequest;
 import net.jemsit.coal.api.dto.MovementDtos.MovementDto;
+import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
+import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.api.service.PileService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +35,14 @@ public class PileController {
     }
 
     @GetMapping
-    public List<PileDto> list() {
-        return service.list();
+    public PageResponse<PileDto> list(
+            @PageableDefault(size = 10, sort = {"pileNumber", "id"}) Pageable pageable) {
+        return service.list(pageable);
+    }
+
+    @GetMapping("/options")
+    public List<OptionDto> options() {
+        return service.options();
     }
 
     @PostMapping

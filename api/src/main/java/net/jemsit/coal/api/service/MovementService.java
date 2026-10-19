@@ -2,15 +2,18 @@ package net.jemsit.coal.api.service;
 
 import net.jemsit.coal.api.dto.MovementDtos.MovementCreateRequest;
 import net.jemsit.coal.api.dto.MovementDtos.MovementDto;
+import net.jemsit.coal.api.dto.PageDtos.PageResponse;
+import net.jemsit.coal.shared.api.ApiException;
 import net.jemsit.coal.shared.domain.Movement;
 import net.jemsit.coal.shared.repo.CoalBatchRepository;
 import net.jemsit.coal.shared.repo.CoalPileRepository;
 import net.jemsit.coal.shared.repo.MovementRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.UUID;
 
 @Service
 public class MovementService {
@@ -31,8 +34,14 @@ public class MovementService {
     }
 
     @Transactional(readOnly = true)
-    public List<MovementDto> list() {
-        return movements.findAllByOrderByCreatedAtDesc().stream().map(this::toDto).toList();
+    public PageResponse<MovementDto> list(Pageable pageable) {
+        return PageResponse.of(movements.findAll(pageable), this::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public MovementDto get(UUID id) {
+        return toDto(movements.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Движение не найдено")));
     }
 
     @Transactional

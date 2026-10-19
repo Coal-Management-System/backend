@@ -1,5 +1,7 @@
 package net.jemsit.coal.api.service;
 
+import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
+import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.api.dto.PileDtos.PileDto;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseCreateRequest;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseDto;
@@ -8,6 +10,8 @@ import net.jemsit.coal.shared.domain.Warehouse;
 import net.jemsit.coal.shared.domain.WarehouseStatus;
 import net.jemsit.coal.shared.repo.CoalPileRepository;
 import net.jemsit.coal.shared.repo.WarehouseRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,14 +32,21 @@ public class WarehouseService {
     }
 
     @Transactional(readOnly = true)
-    public List<WarehouseDto> list() {
-        return warehouses.findAllByOrderByNumberAsc().stream().map(w -> new WarehouseDto(
+    public PageResponse<WarehouseDto> list(Pageable pageable) {
+        return PageResponse.of(warehouses.findAll(pageable), w -> new WarehouseDto(
                 w.getId(),
                 w.getNumber(),
                 w.getLocation(),
                 w.getStatus(),
-                piles.findByWarehouseIdOrderByPileNumberAsc(w.getId()).size(),
-                w.getCreatedAt())).toList();
+                piles.countByWarehouseId(w.getId()),
+                w.getCreatedAt()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<OptionDto> options() {
+        return warehouses.findAll(Sort.by("number", "id")).stream()
+                .map(w -> new OptionDto(w.getId(), w.getNumber()))
+                .toList();
     }
 
     @Transactional
