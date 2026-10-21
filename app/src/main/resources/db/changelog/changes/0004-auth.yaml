@@ -1,0 +1,72 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0004-app-user
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: app_user
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: username, type: "varchar(50)", constraints: { nullable: false, unique: true } }
+              - column: { name: password_hash, type: "varchar(100)", constraints: { nullable: false } }
+              - column: { name: full_name, type: "varchar(120)", constraints: { nullable: false } }
+              - column: { name: role, type: "varchar(20)", constraints: { nullable: false } }
+              - column: { name: shift, type: "varchar(10)", constraints: { nullable: false } }
+
+  - changeSet:
+      id: 0004-auth-session
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: auth_session
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: token, type: "varchar(64)", constraints: { nullable: false, unique: true } }
+              - column: { name: user_id, type: uuid, constraints: { nullable: false } }
+              - column: { name: expires_at, type: timestamptz, constraints: { nullable: false } }
+        - addForeignKeyConstraint:
+            baseTableName: auth_session
+            baseColumnNames: user_id
+            referencedTableName: app_user
+            referencedColumnNames: id
+            constraintName: fk_auth_session_user
+
+  # Seed accounts for local development. Passwords: admin123 / manager123 / user123.
+  - changeSet:
+      id: 0004-seed-users
+      author: jemsit
+      changes:
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000001" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "admin" }
+              - column: { name: password_hash, value: "$2a$10$gNEPx.99oY/ijy6n80PeO.jDL1DIne1kSOmMpsB.oJ6wvzm0StDIu" }
+              - column: { name: full_name, value: "Администратор системы" }
+              - column: { name: role, value: "ADMIN" }
+              - column: { name: shift, value: "A" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000002" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "manager" }
+              - column: { name: password_hash, value: "$2a$10$Hc1okC7DTjHd7UcwcN4C/OevUIppV2VC7xW/7o08KmCLekc5MFrZS" }
+              - column: { name: full_name, value: "Менеджер учёта" }
+              - column: { name: role, value: "MANAGER" }
+              - column: { name: shift, value: "B" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000003" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "user" }
+              - column: { name: password_hash, value: "$2a$10$2vrKjhygj/UznAQfE.96gerUc9h7lXOiYJo7GrqSEHIADg3kvNnve" }
+              - column: { name: full_name, value: "Диспетчер смены" }
+              - column: { name: role, value: "USER" }
+              - column: { name: shift, value: "A" }

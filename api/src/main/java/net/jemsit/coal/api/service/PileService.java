@@ -205,8 +205,7 @@ public class PileService {
                 .collect(Collectors.joining(", "));
         batch.getPiles().add(pile);
         pile.getBatches().add(batch);
-        // The tons leave the batch document for the pile; keeping them on both would double-count the coal.
-        batch.setInitialWeight(batch.getInitialWeight().subtract(req.volume()));
+        // The party document keeps its declared size; only the pile physically grows.
         pile.setVolume(pile.getVolume().add(req.volume()));
         recordMovement(pile, batch, MovementOperation.BATCH_ACCEPTED_INTO_PILE, req.volume(),
                 from.isEmpty() ? null : from, warehouseNumber(pile));
