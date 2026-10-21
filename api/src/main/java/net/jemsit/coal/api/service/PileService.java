@@ -1,5 +1,6 @@
 package net.jemsit.coal.api.service;
 
+import net.jemsit.coal.api.dto.PileDtos.PileAcceptBatchRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileCreateRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileDto;
 import net.jemsit.coal.api.dto.PileDtos.PileMergeRequest;
@@ -27,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class PileService {
@@ -183,6 +186,31 @@ public class PileService {
                     warehouseNumber(source), warehouseNumber(target));
         }
         return toDto(target);
+    }
+
+    @Transactional
+    public PileDto acceptBatch(UUID pileId, PileAcceptBatchRequest req) {
+        CoalPile pile = load(pileId);
+        CoalBatch batch = batches.findById(req.batchId())
+                .orElseThrow(() -> ApiException.notFound("Партия не найдена: " + req.batchId()));
+        if (req.volume().compareTo(batch.freeVolume()) > 0) {
+            throw ApiException.badRequest(
+                    "Объем приёма больше свободного остатка партии " + batch.getBatchNumber());
+        }
+        // Where the batch lay before this acceptance; empty when the batch had no piles yet.
+        String from = batch.getPiles().stream()
+                .map(this::warehouseNumber)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.joining(", "));
+        batch.getPiles().add(pile);
+        pile.getBatches().add(batch);
+        // The tons leave the batch document for the pile; keeping them on both would double-count the coal.
+        batch.setInitialWeight(batch.getInitialWeight().subtract(req.volume()));
+        pile.setVolume(pile.getVolume().add(req.volume()));
+        recordMovement(pile, batch, MovementOperation.BATCH_ACCEPTED_INTO_PILE, req.volume(),
+                from.isEmpty() ? null : from, warehouseNumber(pile));
+        return toDto(pile);
     }
 
     @Transactional

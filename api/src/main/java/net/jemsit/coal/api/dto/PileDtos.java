@@ -48,6 +48,11 @@ public final class PileDtos {
             @NotNull UUID targetPileId) {
     }
 
+    public record PileAcceptBatchRequest(
+            @NotNull UUID batchId,
+            @NotNull @Positive BigDecimal volume) {
+    }
+
     public record PileTransferRequest(@NotNull UUID toWarehouseId) {
     }
 }

@@ -1,6 +1,7 @@
 package net.jemsit.coal.api;
 
 import jakarta.validation.Valid;
+import net.jemsit.coal.api.dto.PileDtos.PileAcceptBatchRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileCreateRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileDto;
 import net.jemsit.coal.api.dto.PileDtos.PileMergeRequest;
@@ -70,6 +71,12 @@ public class PileController {
     @PostMapping("/merge")
     public PileDto merge(@Valid @RequestBody PileMergeRequest req) {
         return service.merge(req);
+    }
+
+    @PostMapping("/{id}/accept-batch")
+    public PileDto acceptBatch(@PathVariable UUID id,
+                               @Valid @RequestBody PileAcceptBatchRequest req) {
+        return service.acceptBatch(id, req);
     }
 
     @PostMapping("/{id}/transfer")

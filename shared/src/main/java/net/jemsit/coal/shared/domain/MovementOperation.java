@@ -4,5 +4,6 @@ public enum MovementOperation {
     PILE_CREATED,
     PILE_MERGED,
     PILE_SPLIT,
-    PILE_TRANSFERRED
+    PILE_TRANSFERRED,
+    BATCH_ACCEPTED_INTO_PILE
 }
