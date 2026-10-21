@@ -193,6 +193,13 @@ public class PileService {
         CoalPile pile = load(pileId);
         CoalBatch batch = batches.findById(req.batchId())
                 .orElseThrow(() -> ApiException.notFound("Партия не найдена: " + req.batchId()));
+        // Guard against re-accepting a party that already sits in this pile.
+        boolean alreadyLinked = pile.getBatches().stream()
+                .anyMatch(b -> b.getId().equals(batch.getId()));
+        if (alreadyLinked) {
+            throw ApiException.badRequest("Партия " + batch.getBatchNumber()
+                    + " уже принята в штабель " + pile.getPileNumber());
+        }
         if (req.volume().compareTo(batch.freeVolume()) > 0) {
             throw ApiException.badRequest(
                     "Объем приёма больше свободного остатка партии " + batch.getBatchNumber());
