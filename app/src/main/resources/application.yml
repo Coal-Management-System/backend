@@ -31,7 +31,12 @@ coal:
     # Key required to delete batches (X-Admin-Key header). Empty disables deletion.
     delete-key: ${COAL_ADMIN_DELETE_KEY:tetris}
   qr:
-    base-url: http://localhost:5174
+    # Host baked into every generated QR code. A phone camera opens this URL
+    # directly, so it must be reachable from the phone — "localhost"/127.0.0.1
+    # only ever resolves on the backend machine itself. Default is the LAN IP so
+    # phones on the same Wi-Fi can scan; override with COAL_QR_BASE_URL for a
+    # public/deployed domain in production.
+    base-url: ${COAL_QR_BASE_URL:https://coal.jemsit.net}
   quality:
     max-ash: 20
     max-moisture: 12
