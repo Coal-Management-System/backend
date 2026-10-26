@@ -55,4 +55,19 @@ public final class PileDtos {
 
     public record PileTransferRequest(@NotNull UUID toWarehouseId) {
     }
+
+    /** One box in the provenance graph: either a pile or a batch. */
+    public record LineageNodeDto(
+            UUID id,
+            String type,
+            String label,
+            boolean current) {
+    }
+
+    /** Directed material flow: batch→pile (accepted into) or pile→batch (split produced). */
+    public record LineageEdgeDto(UUID from, UUID to) {
+    }
+
+    public record PileLineageDto(List<LineageNodeDto> nodes, List<LineageEdgeDto> edges) {
+    }
 }

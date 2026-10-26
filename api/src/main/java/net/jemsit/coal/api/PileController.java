@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import net.jemsit.coal.api.dto.PileDtos.PileAcceptBatchRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileCreateRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileDto;
+import net.jemsit.coal.api.dto.PileDtos.PileLineageDto;
 import net.jemsit.coal.api.dto.PileDtos.PileMergeRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileSplitRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileTransferRequest;
@@ -60,6 +61,11 @@ public class PileController {
     @GetMapping("/{id}/history")
     public List<MovementDto> history(@PathVariable UUID id) {
         return service.history(id);
+    }
+
+    @GetMapping("/{id}/lineage")
+    public PileLineageDto lineage(@PathVariable UUID id) {
+        return service.lineage(id);
     }
 
     @PostMapping("/{id}/split")

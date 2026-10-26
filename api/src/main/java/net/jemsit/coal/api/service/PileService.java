@@ -3,9 +3,12 @@ package net.jemsit.coal.api.service;
 import net.jemsit.coal.api.dto.PileDtos.PileAcceptBatchRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileCreateRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileDto;
+import net.jemsit.coal.api.dto.PileDtos.PileLineageDto;
 import net.jemsit.coal.api.dto.PileDtos.PileMergeRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileSplitRequest;
 import net.jemsit.coal.api.dto.PileDtos.PileTransferRequest;
+import net.jemsit.coal.api.dto.PileDtos.LineageEdgeDto;
+import net.jemsit.coal.api.dto.PileDtos.LineageNodeDto;
 import net.jemsit.coal.api.dto.MovementDtos.MovementDto;
 import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
 import net.jemsit.coal.api.dto.PageDtos.PageResponse;
@@ -27,8 +30,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -75,6 +83,90 @@ public class PileService {
         load(pileId);
         return movements.findByPileIdOrderByCreatedAtDesc(pileId).stream()
                 .map(movementService::toDto).toList();
+    }
+
+    /** How deep the provenance walk goes in each direction, and how big the graph may get. */
+    private static final int LINEAGE_DEPTH = 3;
+    private static final int LINEAGE_MAX_NODES = 80;
+
+    /**
+     * Provenance graph around one pile: which parties fed into it (and which piles those came
+     * from), and which parties/piles it was split into. Edges follow the material flow —
+     * batch→pile when a party sits in a pile, pile→batch when a split produced the party.
+     */
+    @Transactional(readOnly = true)
+    public PileLineageDto lineage(UUID pileId) {
+        CoalPile start = load(pileId);
+        Map<UUID, LineageNodeDto> nodes = new LinkedHashMap<>();
+        Map<String, LineageEdgeDto> edges = new LinkedHashMap<>();
+        addPileNode(nodes, start, true);
+        walkUp(start, LINEAGE_DEPTH, nodes, edges, new HashSet<>());
+        walkDown(start, LINEAGE_DEPTH, nodes, edges, new HashSet<>());
+        return new PileLineageDto(new ArrayList<>(nodes.values()), new ArrayList<>(edges.values()));
+    }
+
+    private void walkUp(CoalPile pile, int depth, Map<UUID, LineageNodeDto> nodes,
+                        Map<String, LineageEdgeDto> edges, Set<UUID> visited) {
+        if (depth <= 0 || nodes.size() >= LINEAGE_MAX_NODES || !visited.add(pile.getId())) {
+            return;
+        }
+        for (CoalBatch b : pile.getBatches()) {
+            addBatchNode(nodes, b);
+            addEdge(edges, b.getId(), pile.getId());
+            // The party was split off some earlier pile: find that pile via the source party.
+            for (CoalBatch source : b.getSourceBatches()) {
+                addBatchNode(nodes, source);
+                for (CoalPile parent : source.getPiles()) {
+                    if (parent.getId().equals(pile.getId())) {
+                        continue;
+                    }
+                    addPileNode(nodes, parent, false);
+                    addEdge(edges, parent.getId(), b.getId());
+                    walkUp(parent, depth - 1, nodes, edges, visited);
+                }
+            }
+        }
+    }
+
+    private void walkDown(CoalPile pile, int depth, Map<UUID, LineageNodeDto> nodes,
+                          Map<String, LineageEdgeDto> edges, Set<UUID> visited) {
+        if (depth <= 0 || nodes.size() >= LINEAGE_MAX_NODES || !visited.add(pile.getId())) {
+            return;
+        }
+        List<UUID> batchIds = pile.getBatches().stream().map(CoalBatch::getId).toList();
+        if (batchIds.isEmpty()) {
+            return;
+        }
+        for (CoalBatch child : batches.findBySourceBatchesIdIn(batchIds)) {
+            addBatchNode(nodes, child);
+            addEdge(edges, pile.getId(), child.getId());
+            for (CoalPile next : child.getPiles()) {
+                if (next.getId().equals(pile.getId())) {
+                    continue;
+                }
+                addPileNode(nodes, next, false);
+                addEdge(edges, child.getId(), next.getId());
+                walkDown(next, depth - 1, nodes, edges, visited);
+            }
+        }
+    }
+
+    private void addPileNode(Map<UUID, LineageNodeDto> nodes, CoalPile pile, boolean current) {
+        if (nodes.size() < LINEAGE_MAX_NODES || nodes.containsKey(pile.getId())) {
+            nodes.putIfAbsent(pile.getId(),
+                    new LineageNodeDto(pile.getId(), "pile", pile.getPileNumber(), current));
+        }
+    }
+
+    private void addBatchNode(Map<UUID, LineageNodeDto> nodes, CoalBatch batch) {
+        if (nodes.size() < LINEAGE_MAX_NODES || nodes.containsKey(batch.getId())) {
+            nodes.putIfAbsent(batch.getId(),
+                    new LineageNodeDto(batch.getId(), "batch", batch.getBatchNumber(), false));
+        }
+    }
+
+    private void addEdge(Map<String, LineageEdgeDto> edges, UUID from, UUID to) {
+        edges.putIfAbsent(from + ">" + to, new LineageEdgeDto(from, to));
     }
 
     @Transactional
