@@ -1,0 +1,57 @@
+databaseChangeLog:
+  # Vocabulary for the batch free-text fields (product type, coal grade, fraction,
+  # quarry, deposit, mining site, supplier) so the UI can offer typeahead + add-new.
+  - changeSet:
+      id: 0005-dictionary-entry
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: dictionary_entry
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: field, type: "varchar(30)", constraints: { nullable: false } }
+              - column: { name: value, type: "varchar(120)", constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: dictionary_entry
+            columnNames: field, value
+            constraintName: uq_dictionary_entry_field_value
+
+  # Backfill the vocabulary from values already used on existing batches, so the
+  # typeahead is useful immediately instead of starting empty.
+  - changeSet:
+      id: 0005-seed-from-batches
+      author: jemsit
+      changes:
+        - sql:
+            splitStatements: true
+            sql: |
+              INSERT INTO dictionary_entry (id, created_at, field, value)
+              SELECT gen_random_uuid(), now(), 'PRODUCT_TYPE', v FROM
+                (SELECT DISTINCT btrim(product_type) AS v FROM coal_batch
+                  WHERE product_type IS NOT NULL AND btrim(product_type) <> '') t;
+              INSERT INTO dictionary_entry (id, created_at, field, value)
+              SELECT gen_random_uuid(), now(), 'COAL_GRADE', v FROM
+                (SELECT DISTINCT btrim(coal_grade) AS v FROM coal_batch
+                  WHERE coal_grade IS NOT NULL AND btrim(coal_grade) <> '') t;
+              INSERT INTO dictionary_entry (id, created_at, field, value)
+              SELECT gen_random_uuid(), now(), 'FRACTION', v FROM
+                (SELECT DISTINCT btrim(fraction) AS v FROM coal_batch
+                  WHERE fraction IS NOT NULL AND btrim(fraction) <> '') t;
+              INSERT INTO dictionary_entry (id, created_at, field, value)
+              SELECT gen_random_uuid(), now(), 'QUARRY', v FROM
+                (SELECT DISTINCT btrim(quarry) AS v FROM coal_batch
+                  WHERE quarry IS NOT NULL AND btrim(quarry) <> '') t;
+              INSERT INTO dictionary_entry (id, created_at, field, value)
+              SELECT gen_random_uuid(), now(), 'DEPOSIT', v FROM
+                (SELECT DISTINCT btrim(deposit) AS v FROM coal_batch
+                  WHERE deposit IS NOT NULL AND btrim(deposit) <> '') t;
+              INSERT INTO dictionary_entry (id, created_at, field, value)
+              SELECT gen_random_uuid(), now(), 'MINING_SITE', v FROM
+                (SELECT DISTINCT btrim(mining_site) AS v FROM coal_batch
+                  WHERE mining_site IS NOT NULL AND btrim(mining_site) <> '') t;
+              INSERT INTO dictionary_entry (id, created_at, field, value)
+              SELECT gen_random_uuid(), now(), 'SUPPLIER', v FROM
+                (SELECT DISTINCT btrim(supplier) AS v FROM coal_batch
+                  WHERE supplier IS NOT NULL AND btrim(supplier) <> '') t;
