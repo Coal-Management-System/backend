@@ -14,6 +14,7 @@ import net.jemsit.coal.shared.domain.Indicator;
 import net.jemsit.coal.shared.domain.LabAnalysis;
 import net.jemsit.coal.shared.domain.LabAnalysisValue;
 import net.jemsit.coal.shared.domain.BatchStatus;
+import net.jemsit.coal.shared.domain.MovementOperation;
 import net.jemsit.coal.shared.domain.OriginType;
 import net.jemsit.coal.shared.repo.CoalBatchRepository;
 import net.jemsit.coal.shared.repo.LabAnalysisRepository;
@@ -57,10 +58,31 @@ public class BatchService {
     }
 
     @Transactional(readOnly = true)
-    public List<OptionDto> options() {
-        return batches.findAll(Sort.by("batchNumber", "id")).stream()
+    public List<OptionDto> options(boolean availableOnly) {
+        List<CoalBatch> all = batches.findAll(Sort.by("batchNumber", "id"));
+        if (!availableOnly) {
+            return all.stream()
+                    .map(b -> new OptionDto(b.getId(), b.getBatchNumber()))
+                    .toList();
+        }
+        // Only parties that still have unaccepted volume are offerable to a pile.
+        Map<UUID, BigDecimal> accepted = acceptedVolumeByBatch();
+        return all.stream()
+                .filter(b -> remainingOf(b, accepted.getOrDefault(b.getId(), BigDecimal.ZERO))
+                        .compareTo(BigDecimal.ZERO) > 0)
                 .map(b -> new OptionDto(b.getId(), b.getBatchNumber()))
                 .toList();
+    }
+
+    /** Accepted-into-pile volume per batch, from the movement ledger. */
+    private Map<UUID, BigDecimal> acceptedVolumeByBatch() {
+        return movements.sumVolumeGrouped(MovementOperation.BATCH_ACCEPTED_INTO_PILE).stream()
+                .collect(Collectors.toMap(r -> (UUID) r[0], r -> (BigDecimal) r[1], (x, y) -> x));
+    }
+
+    /** What is left of a party after everything folded into piles so far. */
+    private static BigDecimal remainingOf(CoalBatch b, BigDecimal accepted) {
+        return b.currentRemainder().subtract(accepted);
     }
 
     @Transactional(readOnly = true)
@@ -183,6 +205,7 @@ public class BatchService {
     }
 
     public BatchDto toDto(CoalBatch b) {
+        BigDecimal accepted = movements.sumVolume(b.getId(), MovementOperation.BATCH_ACCEPTED_INTO_PILE);
         return new BatchDto(
                 b.getId(),
                 b.getBatchNumber(),
@@ -204,6 +227,8 @@ public class BatchService {
                 b.getLosses(),
                 b.currentRemainder(),
                 b.freeVolume(),
+                accepted,
+                remainingOf(b, accepted),
                 b.getPiles().stream()
                         .map(p -> p.getWarehouse() == null ? null : p.getWarehouse().getNumber())
                         .filter(java.util.Objects::nonNull)

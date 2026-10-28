@@ -285,16 +285,17 @@ public class PileService {
         CoalPile pile = load(pileId);
         CoalBatch batch = batches.findById(req.batchId())
                 .orElseThrow(() -> ApiException.notFound("Партия не найдена: " + req.batchId()));
-        // Guard against re-accepting a party that already sits in this pile.
-        boolean alreadyLinked = pile.getBatches().stream()
-                .anyMatch(b -> b.getId().equals(batch.getId()));
-        if (alreadyLinked) {
-            throw ApiException.badRequest("Партия " + batch.getBatchNumber()
-                    + " уже принята в штабель " + pile.getPileNumber());
+        // A party may be folded into piles in several partial accepts; what is left is its
+        // declared size minus everything already accepted, so the same party can be accepted
+        // again (even into the same pile) until nothing remains.
+        BigDecimal accepted = movements.sumVolume(batch.getId(), MovementOperation.BATCH_ACCEPTED_INTO_PILE);
+        BigDecimal remaining = batch.currentRemainder().subtract(accepted);
+        if (req.volume() == null || req.volume().compareTo(BigDecimal.ZERO) <= 0) {
+            throw ApiException.badRequest("Объем приёма должен быть больше нуля");
         }
-        if (req.volume().compareTo(batch.freeVolume()) > 0) {
-            throw ApiException.badRequest(
-                    "Объем приёма больше свободного остатка партии " + batch.getBatchNumber());
+        if (req.volume().compareTo(remaining) > 0) {
+            throw ApiException.badRequest("Объем приёма больше остатка партии "
+                    + batch.getBatchNumber() + " (" + remaining + " т)");
         }
         // Where the batch lay before this acceptance; empty when the batch had no piles yet.
         String from = batch.getPiles().stream()
@@ -304,10 +305,14 @@ public class PileService {
                 .collect(Collectors.joining(", "));
         batch.getPiles().add(pile);
         pile.getBatches().add(batch);
-        // The party document keeps its declared size; only the pile physically grows.
+        // The party document keeps its declared size; the pile physically grows by the accepted part.
         pile.setVolume(pile.getVolume().add(req.volume()));
         recordMovement(pile, batch, MovementOperation.BATCH_ACCEPTED_INTO_PILE, req.volume(),
                 from.isEmpty() ? null : from, warehouseNumber(pile));
+        // Once the whole party has been folded into piles, its own lifecycle is over.
+        if (remaining.subtract(req.volume()).compareTo(BigDecimal.ZERO) <= 0) {
+            batch.setStatus(BatchStatus.ARCHIVED);
+        }
         return toDto(pile);
     }
 

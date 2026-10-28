@@ -4,5 +4,7 @@ public enum BatchStatus {
     NEW,
     IN_PROCESSING,
     READY_FOR_SHIPMENT,
-    SHIPPED
+    SHIPPED,
+    /** Set automatically once the party has been accepted into a pile. */
+    ARCHIVED
 }

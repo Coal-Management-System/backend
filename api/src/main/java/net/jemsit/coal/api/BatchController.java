@@ -45,8 +45,9 @@ public class BatchController {
 
     // Literal path segments outrank the /{id} template, so these never reach the UUID converter.
     @GetMapping("/options")
-    public List<OptionDto> options() {
-        return service.options();
+    public List<OptionDto> options(
+            @RequestParam(name = "availableOnly", defaultValue = "false") boolean availableOnly) {
+        return service.options(availableOnly);
     }
 
     @GetMapping("/by-number/{number}")

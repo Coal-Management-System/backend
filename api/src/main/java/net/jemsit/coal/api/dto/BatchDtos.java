@@ -38,6 +38,8 @@ public final class BatchDtos {
             BigDecimal losses,
             BigDecimal currentRemainder,
             BigDecimal freeVolume,
+            BigDecimal acceptedVolume,
+            BigDecimal remainingVolume,
             List<String> storageLocations,
             List<UUID> sourceBatchIds,
             List<String> sourceBatchNumbers,
