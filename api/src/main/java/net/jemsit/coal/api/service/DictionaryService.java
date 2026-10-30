@@ -18,9 +18,11 @@ import java.util.Map;
 public class DictionaryService {
 
     private final DictionaryEntryRepository repo;
+    private final AdminKeyGuard guard;
 
-    public DictionaryService(DictionaryEntryRepository repo) {
+    public DictionaryService(DictionaryEntryRepository repo, AdminKeyGuard guard) {
         this.repo = repo;
+        this.guard = guard;
     }
 
     /** Every word grouped by field, in a stable order, for typeahead and the browse page. */
@@ -52,5 +54,21 @@ public class DictionaryService {
                     entry = repo.save(entry);
                     return new EntryDto(entry.getField().name(), entry.getValue());
                 });
+    }
+
+    /**
+     * Permanently deletes one vocabulary word. Requires the admin key and the word
+     * typed back as confirmation. Dictionary entries are leaves — batch fields hold
+     * free text, not a foreign key — so removing a word never touches a party.
+     */
+    @Transactional
+    public void delete(DictionaryField field, String value, String adminKey, String confirmValue) {
+        guard.check(adminKey);
+        DictionaryEntry entry = repo.findByFieldAndValueIgnoreCase(field, value)
+                .orElseThrow(() -> ApiException.notFound("Слово не найдено: " + value));
+        if (confirmValue == null || !confirmValue.equalsIgnoreCase(entry.getValue())) {
+            throw ApiException.badRequest("Слово для подтверждения не совпадает");
+        }
+        repo.delete(entry);
     }
 }

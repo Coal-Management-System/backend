@@ -6,6 +6,7 @@ import net.jemsit.coal.api.dto.PileDtos.PileDto;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseCreateRequest;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseDto;
 import net.jemsit.coal.shared.api.ApiException;
+import net.jemsit.coal.shared.domain.CoalPile;
 import net.jemsit.coal.shared.domain.Warehouse;
 import net.jemsit.coal.shared.domain.WarehouseStatus;
 import net.jemsit.coal.shared.repo.CoalPileRepository;
@@ -24,11 +25,14 @@ public class WarehouseService {
     private final WarehouseRepository warehouses;
     private final CoalPileRepository piles;
     private final PileService pileService;
+    private final AdminKeyGuard guard;
 
-    public WarehouseService(WarehouseRepository warehouses, CoalPileRepository piles, PileService pileService) {
+    public WarehouseService(WarehouseRepository warehouses, CoalPileRepository piles,
+                            PileService pileService, AdminKeyGuard guard) {
         this.warehouses = warehouses;
         this.piles = piles;
         this.pileService = pileService;
+        this.guard = guard;
     }
 
     @Transactional(readOnly = true)
@@ -67,5 +71,24 @@ public class WarehouseService {
     public List<PileDto> piles(UUID warehouseId) {
         return piles.findByWarehouseIdOrderByPileNumberAsc(warehouseId).stream()
                 .map(pileService::toDto).toList();
+    }
+
+    /**
+     * Permanently deletes a warehouse. Requires the admin key and the warehouse
+     * number typed back. Its piles are unlinked (kept, {@code warehouse_id} set
+     * null) rather than deleted.
+     */
+    @Transactional
+    public void delete(UUID id, String adminKey, String confirmNumber) {
+        guard.check(adminKey);
+        Warehouse w = warehouses.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Склад не найден: " + id));
+        if (!w.getNumber().equals(confirmNumber)) {
+            throw ApiException.badRequest("Номер склада для подтверждения не совпадает");
+        }
+        for (CoalPile p : piles.findByWarehouseIdOrderByPileNumberAsc(id)) {
+            p.setWarehouse(null);
+        }
+        warehouses.delete(w);
     }
 }

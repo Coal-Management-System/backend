@@ -48,17 +48,20 @@ public class PileService {
     private final WarehouseRepository warehouses;
     private final MovementRepository movements;
     private final MovementService movementService;
+    private final AdminKeyGuard guard;
 
     public PileService(CoalPileRepository piles,
                        CoalBatchRepository batches,
                        WarehouseRepository warehouses,
                        MovementRepository movements,
-                       MovementService movementService) {
+                       MovementService movementService,
+                       AdminKeyGuard guard) {
         this.piles = piles;
         this.batches = batches;
         this.warehouses = warehouses;
         this.movements = movements;
         this.movementService = movementService;
+        this.guard = guard;
     }
 
     @Transactional(readOnly = true)
@@ -330,6 +333,32 @@ public class PileService {
 
     public CoalPile load(UUID id) {
         return piles.findById(id).orElseThrow(() -> ApiException.notFound("Штабель не найден: " + id));
+    }
+
+    /**
+     * Permanently deletes a pile. Requires the admin key and the pile number typed
+     * back. The pile's movements are detached (kept as history, {@code pile_id} set
+     * null) so the batch accepted-volume totals — derived from the batch side of the
+     * ledger — are unchanged; the parties are unlinked but kept; and removing the
+     * pile row takes it out of its warehouse.
+     */
+    @Transactional
+    public void delete(UUID id, String adminKey, String confirmNumber) {
+        guard.check(adminKey);
+        CoalPile pile = load(id);
+        if (!pile.getPileNumber().equals(confirmNumber)) {
+            throw ApiException.badRequest("Номер штабеля для подтверждения не совпадает");
+        }
+        for (Movement m : movements.findByPileIdOrderByCreatedAtDesc(id)) {
+            m.setPile(null);
+        }
+        // CoalBatch owns the join, so unlink must remove the pile from each party.
+        for (CoalBatch b : List.copyOf(pile.getBatches())) {
+            b.getPiles().remove(pile);
+        }
+        pile.getBatches().clear();
+        pile.setWarehouse(null);
+        piles.delete(pile);
     }
 
     private String nextSplitNumber(String base) {

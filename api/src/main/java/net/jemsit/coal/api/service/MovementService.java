@@ -21,15 +21,18 @@ public class MovementService {
     private final MovementRepository movements;
     private final CoalBatchRepository batches;
     private final CoalPileRepository piles;
+    private final AdminKeyGuard guard;
     private final String qrBaseUrl;
 
     public MovementService(MovementRepository movements,
                            CoalBatchRepository batches,
                            CoalPileRepository piles,
+                           AdminKeyGuard guard,
                            @Value("${coal.qr.base-url:http://localhost:5174}") String qrBaseUrl) {
         this.movements = movements;
         this.batches = batches;
         this.piles = piles;
+        this.guard = guard;
         this.qrBaseUrl = qrBaseUrl;
     }
 
@@ -59,6 +62,24 @@ public class MovementService {
         m.setToLocation(req.toLocation());
         m.setOriginSource(req.originSource());
         return toDto(movements.save(m));
+    }
+
+    /**
+     * Permanently deletes one movement record. A movement has no unique name, so
+     * the confirmation word is its operation code (e.g. {@code SHIPMENT}) typed
+     * back, alongside the admin key. Movements are leaves — nothing references
+     * them — but note a {@code BATCH_ACCEPTED_INTO_PILE} movement feeds the batch's
+     * accepted-volume total, so deleting one gives that volume back to the party.
+     */
+    @Transactional
+    public void delete(UUID id, String adminKey, String confirmOperation) {
+        guard.check(adminKey);
+        Movement m = movements.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Движение не найдено"));
+        if (!m.getOperation().name().equals(confirmOperation)) {
+            throw ApiException.badRequest("Операция для подтверждения не совпадает");
+        }
+        movements.delete(m);
     }
 
     public MovementDto toDto(Movement m) {

@@ -13,4 +13,6 @@ public interface LabAnalysisRepository extends JpaRepository<LabAnalysis, UUID> 
     List<LabAnalysis> findByBatchIdOrderByAnalysisDateAsc(UUID batchId);
 
     boolean existsByBatchId(UUID batchId);
+
+    boolean existsByLabId(UUID labId);
 }

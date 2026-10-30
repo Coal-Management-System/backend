@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class LabService {
@@ -29,11 +30,14 @@ public class LabService {
     private final LaboratoryRepository labs;
     private final LabAnalysisRepository analyses;
     private final CoalBatchRepository batches;
+    private final AdminKeyGuard guard;
 
-    public LabService(LaboratoryRepository labs, LabAnalysisRepository analyses, CoalBatchRepository batches) {
+    public LabService(LaboratoryRepository labs, LabAnalysisRepository analyses,
+                      CoalBatchRepository batches, AdminKeyGuard guard) {
         this.labs = labs;
         this.analyses = analyses;
         this.batches = batches;
+        this.guard = guard;
     }
 
     @Transactional(readOnly = true)
@@ -85,6 +89,40 @@ public class LabService {
             }
         }
         return toDto(analyses.save(a));
+    }
+
+    /**
+     * Permanently deletes a laboratory. Requires the admin key and the lab name
+     * typed back. Blocked while any analysis still references it (lab_id is
+     * NOT NULL), so results must be removed first.
+     */
+    @Transactional
+    public void deleteLab(UUID id, String adminKey, String confirmName) {
+        guard.check(adminKey);
+        Laboratory lab = labs.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Лаборатория не найдена: " + id));
+        if (!lab.getName().equals(confirmName)) {
+            throw ApiException.badRequest("Название лаборатории для подтверждения не совпадает");
+        }
+        if (analyses.existsByLabId(id)) {
+            throw ApiException.conflict("По лаборатории есть результаты анализов, удаление невозможно");
+        }
+        labs.delete(lab);
+    }
+
+    /**
+     * Permanently deletes one analysis result. Requires the admin key and the
+     * sample number typed back. Its indicator values cascade away with it.
+     */
+    @Transactional
+    public void deleteAnalysis(UUID id, String adminKey, String confirmNumber) {
+        guard.check(adminKey);
+        LabAnalysis a = analyses.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Результат анализа не найден: " + id));
+        if (!a.getSampleNumber().equals(confirmNumber)) {
+            throw ApiException.badRequest("Номер пробы для подтверждения не совпадает");
+        }
+        analyses.delete(a);
     }
 
     public AnalysisDto toDto(LabAnalysis a) {

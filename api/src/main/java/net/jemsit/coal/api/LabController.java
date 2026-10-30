@@ -12,14 +12,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
@@ -48,6 +53,14 @@ public class LabController {
         return service.createLab(req);
     }
 
+    @DeleteMapping("/labs/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteLab(@PathVariable UUID id,
+                          @RequestHeader(name = "X-Admin-Key", required = false) String adminKey,
+                          @RequestParam(required = false) String confirmName) {
+        service.deleteLab(id, adminKey, confirmName);
+    }
+
     @GetMapping("/lab-analyses")
     public PageResponse<AnalysisDto> analyses(
             @PageableDefault(size = 10, sort = {"analysisDate", "id"},
@@ -59,5 +72,13 @@ public class LabController {
     @ResponseStatus(HttpStatus.CREATED)
     public AnalysisDto createAnalysis(@Valid @RequestBody AnalysisCreateRequest req) {
         return service.createAnalysis(req);
+    }
+
+    @DeleteMapping("/lab-analyses/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAnalysis(@PathVariable UUID id,
+                               @RequestHeader(name = "X-Admin-Key", required = false) String adminKey,
+                               @RequestParam(required = false) String confirmNumber) {
+        service.deleteAnalysis(id, adminKey, confirmNumber);
     }
 }
