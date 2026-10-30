@@ -8,5 +8,8 @@ public enum DictionaryField {
     QUARRY,
     DEPOSIT,
     MINING_SITE,
-    SUPPLIER
+    SUPPLIER,
+    // Lab-analysis method; shares the same dictionary table (field is varchar(30),
+    // no CHECK constraint), so adding it needs no schema migration.
+    METHOD
 }
