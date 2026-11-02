@@ -8,6 +8,7 @@ import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseCreateRequest;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseDto;
 import net.jemsit.coal.api.service.WarehouseService;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,7 +37,7 @@ public class WarehouseController {
 
     @GetMapping
     public PageResponse<WarehouseDto> list(
-            @PageableDefault(size = 10, sort = {"number", "id"}) Pageable pageable) {
+            @PageableDefault(size = 10, sort = {"number", "id"}, direction = Sort.Direction.DESC) Pageable pageable) {
         return service.list(pageable);
     }
 

@@ -13,6 +13,7 @@ import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
 import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.api.service.PileService;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,7 +42,7 @@ public class PileController {
 
     @GetMapping
     public PageResponse<PileDto> list(
-            @PageableDefault(size = 10, sort = {"pileNumber", "id"}) Pageable pageable) {
+            @PageableDefault(size = 10, sort = {"pileNumber", "id"}, direction = Sort.Direction.DESC) Pageable pageable) {
         return service.list(pageable);
     }
 
