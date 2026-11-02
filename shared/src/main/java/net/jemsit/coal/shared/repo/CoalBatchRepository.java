@@ -19,6 +19,13 @@ public interface CoalBatchRepository extends JpaRepository<CoalBatch, UUID> {
 
     boolean existsByBatchNumber(String batchNumber);
 
+    /**
+     * Party numbers already issued for one day, e.g. every «П-021126-…». Read under an
+     * advisory lock by {@code BatchNumberGenerator} to find the day's last counter.
+     */
+    @Query("select b.batchNumber from CoalBatch b where b.batchNumber like concat(:prefix, '%')")
+    List<String> findNumbersStartingWith(@Param("prefix") String prefix);
+
     boolean existsBySourceBatchesId(UUID sourceBatchId);
 
     /** Batches split off any of the given source batches; used by the provenance graph. */

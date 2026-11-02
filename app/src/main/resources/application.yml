@@ -27,6 +27,11 @@ management:
         include: health,info
 
 coal:
+  numbering:
+    # Calendar day behind the «П-ddMMyy-NNN» party numbers. Pinned rather than read from the
+    # JVM, because the server may run in UTC while the operators work on Uzbek time — otherwise
+    # the daily counter would roll over five hours late.
+    zone: ${COAL_NUMBERING_ZONE:Asia/Tashkent}
   admin:
     # Key required to delete batches (X-Admin-Key header). Empty disables deletion.
     delete-key: ${COAL_ADMIN_DELETE_KEY:tetris}

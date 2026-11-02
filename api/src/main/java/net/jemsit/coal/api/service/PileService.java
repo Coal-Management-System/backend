@@ -48,6 +48,7 @@ public class PileService {
     private final WarehouseRepository warehouses;
     private final MovementRepository movements;
     private final MovementService movementService;
+    private final BatchNumberGenerator numberGenerator;
     private final AdminKeyGuard guard;
 
     public PileService(CoalPileRepository piles,
@@ -55,12 +56,14 @@ public class PileService {
                        WarehouseRepository warehouses,
                        MovementRepository movements,
                        MovementService movementService,
+                       BatchNumberGenerator numberGenerator,
                        AdminKeyGuard guard) {
         this.piles = piles;
         this.batches = batches;
         this.warehouses = warehouses;
         this.movements = movements;
         this.movementService = movementService;
+        this.numberGenerator = numberGenerator;
         this.guard = guard;
     }
 
@@ -204,9 +207,6 @@ public class PileService {
         if (req.volume().compareTo(source.getVolume()) > 0) {
             throw ApiException.badRequest("Объем отделения больше объема штабеля");
         }
-        if (batches.existsByBatchNumber(req.newBatchNumber())) {
-            throw ApiException.conflict("Партия с номером " + req.newBatchNumber() + " уже существует");
-        }
         Warehouse target = req.toWarehouseId() == null
                 ? source.getWarehouse()
                 : warehouses.findById(req.toWarehouseId())
@@ -215,7 +215,10 @@ public class PileService {
         CoalBatch origin = source.getBatches().stream().findFirst().orElse(null);
 
         CoalBatch newBatch = new CoalBatch();
-        newBatch.setBatchNumber(req.newBatchNumber());
+        // Same daily counter as a normally created party, drawn inside this transaction so a
+        // split and a create running at the same time cannot be handed the same number. An
+        // operator-supplied number is honoured instead, after a duplicate check.
+        newBatch.setBatchNumber(numberGenerator.resolve(req.newBatchNumber()));
         newBatch.setInitialWeight(req.volume());
         newBatch.setStatus(BatchStatus.NEW);
         if (origin != null) {

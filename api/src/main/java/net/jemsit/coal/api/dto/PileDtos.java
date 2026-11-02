@@ -36,10 +36,14 @@ public final class PileDtos {
             List<UUID> batchIds) {
     }
 
+    /**
+     * Pile split. The party split off the pile is numbered from the same daily counter as a
+     * normally created party; {@code newBatchNumber} is an optional operator override.
+     */
     public record PileSplitRequest(
             @NotNull @Positive BigDecimal volume,
             UUID toWarehouseId,
-            @NotBlank String newBatchNumber,
+            String newBatchNumber,
             Boolean sendImmediately) {
     }
 

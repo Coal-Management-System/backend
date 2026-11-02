@@ -48,8 +48,14 @@ public final class BatchDtos {
             Instant createdAt) {
     }
 
+    /**
+     * Party creation. The batch number is optional: left empty, the server assigns it from
+     * the day's counter ({@code BatchNumberGenerator}) inside the create transaction. An
+     * operator who needs a specific number — one already written on a paper document, say —
+     * can send it explicitly, and it is then checked for duplicates like any typed number.
+     */
     public record BatchCreateRequest(
-            @NotBlank String batchNumber,
+            String batchNumber,
             String productType,
             String coalGrade,
             String fraction,
@@ -77,6 +83,10 @@ public final class BatchDtos {
             String supplier,
             Instant minedAt,
             @NotNull @Positive BigDecimal initialWeight) {
+    }
+
+    /** What a party created right now would be numbered; an estimate, not a reservation. */
+    public record NextNumberResponse(String batchNumber) {
     }
 
     public record QualityHistoryRow(

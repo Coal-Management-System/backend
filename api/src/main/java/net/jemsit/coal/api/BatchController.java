@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import net.jemsit.coal.api.dto.BatchDtos.BatchCreateRequest;
 import net.jemsit.coal.api.dto.BatchDtos.BatchDto;
 import net.jemsit.coal.api.dto.BatchDtos.BatchUpdateRequest;
+import net.jemsit.coal.api.dto.BatchDtos.NextNumberResponse;
 import net.jemsit.coal.api.dto.BatchDtos.QualityHistoryRow;
 import net.jemsit.coal.api.dto.LabDtos.AnalysisDto;
 import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
@@ -53,6 +54,12 @@ public class BatchController {
     @GetMapping("/by-number/{number}")
     public BatchDto byNumber(@PathVariable String number) {
         return service.byNumber(number);
+    }
+
+    /** Preview shown in the create form; the number is only assigned when the party is saved. */
+    @GetMapping("/next-number")
+    public NextNumberResponse nextNumber() {
+        return service.nextNumber();
     }
 
     @PostMapping

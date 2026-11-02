@@ -3,6 +3,7 @@ package net.jemsit.coal.api.service;
 import net.jemsit.coal.api.dto.BatchDtos.BatchCreateRequest;
 import net.jemsit.coal.api.dto.BatchDtos.BatchDto;
 import net.jemsit.coal.api.dto.BatchDtos.BatchUpdateRequest;
+import net.jemsit.coal.api.dto.BatchDtos.NextNumberResponse;
 import net.jemsit.coal.api.dto.BatchDtos.QualityHistoryRow;
 import net.jemsit.coal.api.dto.LabDtos.AnalysisDto;
 import net.jemsit.coal.api.dto.LabDtos.AnalysisValueDto;
@@ -40,15 +41,18 @@ public class BatchService {
     private final LabAnalysisRepository analyses;
     private final MovementRepository movements;
     private final LabService labService;
+    private final BatchNumberGenerator numberGenerator;
     private final String deleteKey;
 
     public BatchService(CoalBatchRepository batches, LabAnalysisRepository analyses,
                         MovementRepository movements, LabService labService,
+                        BatchNumberGenerator numberGenerator,
                         @Value("${coal.admin.delete-key:}") String deleteKey) {
         this.batches = batches;
         this.analyses = analyses;
         this.movements = movements;
         this.labService = labService;
+        this.numberGenerator = numberGenerator;
         this.deleteKey = deleteKey;
     }
 
@@ -96,13 +100,19 @@ public class BatchService {
         return toDto(load(id));
     }
 
+    /**
+     * Preview for the create form: the number a party saved right now would most likely get.
+     * Nothing is reserved, so the real number can still move if someone else saves first.
+     */
+    @Transactional(readOnly = true)
+    public NextNumberResponse nextNumber() {
+        return new NextNumberResponse(numberGenerator.preview());
+    }
+
     @Transactional
     public BatchDto create(BatchCreateRequest req) {
-        if (batches.existsByBatchNumber(req.batchNumber())) {
-            throw ApiException.conflict("Партия с номером " + req.batchNumber() + " уже существует");
-        }
         CoalBatch b = new CoalBatch();
-        b.setBatchNumber(req.batchNumber());
+        b.setBatchNumber(numberGenerator.resolve(req.batchNumber()));
         b.setProductType(req.productType());
         b.setCoalGrade(req.coalGrade());
         b.setFraction(req.fraction());
