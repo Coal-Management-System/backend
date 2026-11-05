@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -122,6 +123,10 @@ public class PileService {
             // The party was split off some earlier pile: find that pile via the source party.
             for (CoalBatch source : b.getSourceBatches()) {
                 addBatchNode(nodes, source);
+                // A transfer takes its sources out of the pile; link them directly instead.
+                if (source.getPiles().isEmpty()) {
+                    addEdge(edges, source.getId(), b.getId());
+                }
                 for (CoalPile parent : source.getPiles()) {
                     if (parent.getId().equals(pile.getId())) {
                         continue;
@@ -212,7 +217,7 @@ public class PileService {
                 : warehouses.findById(req.toWarehouseId())
                 .orElseThrow(() -> ApiException.notFound("Склад не найден: " + req.toWarehouseId()));
 
-        CoalBatch origin = source.getBatches().stream().findFirst().orElse(null);
+        List<CoalBatch> parties = oldestFirst(source);
 
         CoalBatch newBatch = new CoalBatch();
         // Same daily counter as a normally created party, drawn inside this transaction so a
@@ -221,20 +226,14 @@ public class PileService {
         newBatch.setBatchNumber(numberGenerator.resolve(req.newBatchNumber()));
         newBatch.setInitialWeight(req.volume());
         newBatch.setStatus(BatchStatus.NEW);
-        if (origin != null) {
-            newBatch.setProductType(origin.getProductType());
-            newBatch.setCoalGrade(origin.getCoalGrade());
-            newBatch.setFraction(origin.getFraction());
-            newBatch.setOriginType(origin.getOriginType());
-            newBatch.setDeposit(origin.getDeposit());
-            newBatch.setMiningSite(origin.getMiningSite());
-            newBatch.setQuarry(origin.getQuarry());
-            newBatch.setShiftPeriod(origin.getShiftPeriod());
-            newBatch.setSupplier(origin.getSupplier());
-            newBatch.setMinedAt(origin.getMinedAt());
-            newBatch.getSourceBatches().add(origin);
-            // the split volume leaves the origin batch for the new one; keeping it on both would double-count the coal
-            origin.setInitialWeight(origin.getInitialWeight().subtract(req.volume()));
+        // The split volume leaves the old parties for the new one; keeping it on both would
+        // double-count the coal. They stay in the pile, which still holds the rest.
+        List<CoalBatch> givers = takeVolume(parties, req.volume());
+        // A pile whose parties have nothing free still names its oldest one, for the lineage.
+        List<CoalBatch> origins = givers.isEmpty() ? parties.stream().limit(1).toList() : givers;
+        if (!origins.isEmpty()) {
+            copyPassport(origins.getFirst(), newBatch);
+            newBatch.getSourceBatches().addAll(origins);
         }
         if (Boolean.TRUE.equals(req.sendImmediately())) {
             newBatch.setStatus(BatchStatus.IN_PROCESSING);
@@ -321,16 +320,107 @@ public class PileService {
         return toDto(pile);
     }
 
+    /**
+     * Moves a whole pile to another warehouse. Its coal becomes one new party, which replaces
+     * the old parties in the pile and names them as its sources. The tonnage leaves the old
+     * parties, oldest first, so totals stay correct; their declared weight is kept as history.
+     */
     @Transactional
     public PileDto transfer(UUID pileId, PileTransferRequest req) {
-        CoalPile pile = load(pileId);
+        CoalPile pile = piles.findForUpdate(pileId)
+                .orElseThrow(() -> ApiException.notFound("Штабель не найден: " + pileId));
         Warehouse from = pile.getWarehouse();
         Warehouse to = warehouses.findById(req.toWarehouseId())
                 .orElseThrow(() -> ApiException.notFound("Склад не найден: " + req.toWarehouseId()));
+        if (from != null && from.getId().equals(to.getId())) {
+            throw ApiException.badRequest("Штабель " + pile.getPileNumber() + " уже находится на этом складе");
+        }
+        if (pile.getVolume().signum() <= 0) {
+            throw ApiException.badRequest("Штабель " + pile.getPileNumber() + " пуст: переносить нечего");
+        }
+        List<CoalBatch> sources = oldestFirst(pile);
+        // A reservation is a promise about specific coal; it has to be released or moved on purpose.
+        for (CoalBatch source : sources) {
+            if (source.getReservedVolume().signum() > 0) {
+                throw ApiException.badRequest("У партии " + source.getBatchNumber() + " есть бронь "
+                        + source.getReservedVolume() + " т — снимите ее перед трансфером");
+            }
+        }
+
+        CoalBatch newBatch = new CoalBatch();
+        newBatch.setBatchNumber(numberGenerator.next());
+        newBatch.setInitialWeight(pile.getVolume());
+        newBatch.setStatus(BatchStatus.NEW);
+        if (!sources.isEmpty()) {
+            copyPassport(sources.getFirst(), newBatch);
+        }
+        takeVolume(sources, pile.getVolume());
+        for (CoalBatch source : sources) {
+            source.getPiles().remove(pile);
+            newBatch.getSourceBatches().add(source);
+        }
+        pile.getBatches().clear();
+        newBatch.getPiles().add(pile);
+        pile.getBatches().add(newBatch);
+        batches.save(newBatch);
+
         pile.setWarehouse(to);
-        recordMovement(pile, null, MovementOperation.PILE_TRANSFERRED, pile.getVolume(),
+        recordMovement(pile, newBatch, MovementOperation.PILE_TRANSFERRED, pile.getVolume(),
                 warehouseNumber(from), warehouseNumber(to));
         return toDto(pile);
+    }
+
+    private static List<CoalBatch> oldestFirst(CoalPile pile) {
+        return pile.getBatches().stream()
+                .sorted(Comparator.comparing(CoalBatch::getCreatedAt))
+                .toList();
+    }
+
+    /**
+     * Records {@code volume} as handed over by the given parties, in order, each up to what it
+     * has in piles. Declared weights stay as history. Returns the parties that gave something.
+     */
+    private List<CoalBatch> takeVolume(List<CoalBatch> parties, BigDecimal volume) {
+        List<CoalBatch> givers = new ArrayList<>();
+        BigDecimal left = volume;
+        for (CoalBatch party : parties) {
+            BigDecimal taken = left.min(volumeInPile(party)).max(BigDecimal.ZERO);
+            if (taken.signum() == 0) {
+                continue;
+            }
+            left = left.subtract(taken);
+            party.setTransferredVolume(party.getTransferredVolume().add(taken));
+            if (party.currentRemainder().signum() <= 0 && party.getStatus() != BatchStatus.SHIPPED) {
+                party.setStatus(BatchStatus.ARCHIVED);
+            }
+            givers.add(party);
+        }
+        return givers;
+    }
+
+    /**
+     * How much of a party's free volume lies in piles. A party that was never accepted can
+     * still be linked (split off a pile, or named when the pile was created): all of it counts.
+     */
+    private BigDecimal volumeInPile(CoalBatch batch) {
+        BigDecimal accepted = movements.sumVolume(batch.getId(), MovementOperation.BATCH_ACCEPTED_INTO_PILE);
+        if (accepted.signum() <= 0) {
+            return batch.freeVolume();
+        }
+        return batch.freeVolume().subtract(movements.unplacedVolume(batch).max(BigDecimal.ZERO));
+    }
+
+    private static void copyPassport(CoalBatch from, CoalBatch to) {
+        to.setProductType(from.getProductType());
+        to.setCoalGrade(from.getCoalGrade());
+        to.setFraction(from.getFraction());
+        to.setOriginType(from.getOriginType());
+        to.setDeposit(from.getDeposit());
+        to.setMiningSite(from.getMiningSite());
+        to.setQuarry(from.getQuarry());
+        to.setShiftPeriod(from.getShiftPeriod());
+        to.setSupplier(from.getSupplier());
+        to.setMinedAt(from.getMinedAt());
     }
 
     public CoalPile load(UUID id) {

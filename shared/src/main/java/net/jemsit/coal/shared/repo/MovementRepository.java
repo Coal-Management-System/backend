@@ -51,8 +51,8 @@ public interface MovementRepository extends JpaRepository<Movement, UUID> {
 
     /** Volume of a party not yet in any pile: the «Остаток партии» shown in the parties list. */
     default BigDecimal unplacedVolume(CoalBatch batch) {
-        return batch.currentRemainder()
-                .subtract(sumVolume(batch.getId(), MovementOperation.BATCH_ACCEPTED_INTO_PILE))
-                .add(unplacedAdjustment(batch.getId()));
+        return batch.unplacedVolume(
+                sumVolume(batch.getId(), MovementOperation.BATCH_ACCEPTED_INTO_PILE),
+                unplacedAdjustment(batch.getId()));
     }
 }

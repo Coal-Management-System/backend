@@ -38,7 +38,8 @@ public interface CoalBatchRepository extends JpaRepository<CoalBatch, UUID> {
     /** Batches split off any of the given source batches; used by the provenance graph. */
     List<CoalBatch> findBySourceBatchesIdIn(Collection<UUID> sourceBatchIds);
 
-    @Query("select coalesce(sum(b.initialWeight), 0) from CoalBatch b "
+    // Transferred coal is mined only once: the new party carries it with the same mining date.
+    @Query("select coalesce(sum(b.initialWeight - b.transferredVolume), 0) from CoalBatch b "
             + "where b.originType = :origin and b.minedAt >= :from")
     BigDecimal sumInitialWeightMinedAfter(@Param("origin") OriginType origin, @Param("from") Instant from);
 }

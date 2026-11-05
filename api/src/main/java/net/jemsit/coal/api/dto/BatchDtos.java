@@ -36,6 +36,7 @@ public final class BatchDtos {
             BigDecimal inProcessingVolume,
             BigDecimal shippedVolume,
             BigDecimal losses,
+            BigDecimal transferredVolume,
             BigDecimal currentRemainder,
             BigDecimal freeVolume,
             BigDecimal acceptedVolume,

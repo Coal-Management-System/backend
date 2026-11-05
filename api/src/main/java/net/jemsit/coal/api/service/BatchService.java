@@ -74,9 +74,9 @@ public class BatchService {
         Map<UUID, BigDecimal> adjustments = movements.unplacedAdjustmentGrouped().stream()
                 .collect(Collectors.toMap(r -> (UUID) r[0], r -> (BigDecimal) r[1]));
         return all.stream()
-                .filter(b -> b.currentRemainder()
-                        .subtract(accepted.getOrDefault(b.getId(), BigDecimal.ZERO))
-                        .add(adjustments.getOrDefault(b.getId(), BigDecimal.ZERO))
+                .filter(b -> b.unplacedVolume(
+                                accepted.getOrDefault(b.getId(), BigDecimal.ZERO),
+                                adjustments.getOrDefault(b.getId(), BigDecimal.ZERO))
                         .compareTo(BigDecimal.ZERO) > 0)
                 .map(b -> new OptionDto(b.getId(), b.getBatchNumber()))
                 .toList();
@@ -234,6 +234,7 @@ public class BatchService {
                 b.getInProcessingVolume(),
                 b.getShippedVolume(),
                 b.getLosses(),
+                b.getTransferredVolume(),
                 b.currentRemainder(),
                 b.freeVolume(),
                 accepted,

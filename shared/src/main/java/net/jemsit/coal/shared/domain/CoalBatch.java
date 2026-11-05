@@ -71,6 +71,10 @@ public class CoalBatch extends BaseEntity {
     @Column(nullable = false, precision = 14, scale = 2)
     private BigDecimal losses = BigDecimal.ZERO;
 
+    /** Tonnage handed to a new party when a pile holding this party was split or moved to another warehouse. */
+    @Column(name = "transferred_volume", nullable = false, precision = 14, scale = 2)
+    private BigDecimal transferredVolume = BigDecimal.ZERO;
+
     @ManyToMany
     @JoinTable(name = "coal_batch_source",
             joinColumns = @JoinColumn(name = "batch_id"),
@@ -84,7 +88,16 @@ public class CoalBatch extends BaseEntity {
     private Set<CoalPile> piles = new LinkedHashSet<>();
 
     public BigDecimal currentRemainder() {
-        return initialWeight.subtract(shippedVolume).subtract(losses);
+        return initialWeight.subtract(shippedVolume).subtract(losses).subtract(transferredVolume);
+    }
+
+    /**
+     * Volume not yet in any pile. Transferred coal lowers the remainder, but when it had been
+     * accepted into the pile it was already counted as accepted, so that part is added back.
+     */
+    public BigDecimal unplacedVolume(BigDecimal accepted, BigDecimal movementAdjustment) {
+        return currentRemainder().subtract(accepted).add(movementAdjustment)
+                .add(transferredVolume.min(accepted));
     }
 
     public BigDecimal freeVolume() {
@@ -225,6 +238,14 @@ public class CoalBatch extends BaseEntity {
 
     public void setLosses(BigDecimal losses) {
         this.losses = losses;
+    }
+
+    public BigDecimal getTransferredVolume() {
+        return transferredVolume;
+    }
+
+    public void setTransferredVolume(BigDecimal transferredVolume) {
+        this.transferredVolume = transferredVolume;
     }
 
     public Set<CoalBatch> getSourceBatches() {

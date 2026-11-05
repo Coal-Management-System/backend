@@ -1,0 +1,14 @@
+databaseChangeLog:
+  # Tonnage a party handed to a new party when its pile moved to another warehouse.
+  - changeSet:
+      id: 0007-batch-transferred-volume
+      author: jemsit
+      changes:
+        - addColumn:
+            tableName: coal_batch
+            columns:
+              - column:
+                  name: transferred_volume
+                  type: numeric(14,2)
+                  defaultValueNumeric: 0
+                  constraints: { nullable: false }
