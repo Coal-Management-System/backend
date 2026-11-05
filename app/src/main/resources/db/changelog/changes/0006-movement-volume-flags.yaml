@@ -1,0 +1,20 @@
+databaseChangeLog:
+  # Movements began moving real volumes only recently. Rows written before that are journal
+  # entries, so the flags default to false: deleting one must not "give back" volume it never took.
+  - changeSet:
+      id: 0006-movement-volume-flags
+      author: jemsit
+      changes:
+        - addColumn:
+            tableName: coal_movement
+            columns:
+              - column:
+                  name: volumes_applied
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+              - column:
+                  name: taken_from_pile
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }

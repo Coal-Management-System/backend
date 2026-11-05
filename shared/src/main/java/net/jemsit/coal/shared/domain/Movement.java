@@ -39,6 +39,30 @@ public class Movement extends BaseEntity {
     @Column(name = "origin_source", length = 200)
     private String originSource;
 
+    /** True when recording this row changed party or pile volumes, so deleting it must undo that. */
+    @Column(name = "volumes_applied", nullable = false)
+    private boolean volumesApplied;
+
+    /** True when the coal came out of the named pile rather than the party's unplaced part. */
+    @Column(name = "taken_from_pile", nullable = false)
+    private boolean takenFromPile;
+
+    public boolean isVolumesApplied() {
+        return volumesApplied;
+    }
+
+    public void setVolumesApplied(boolean volumesApplied) {
+        this.volumesApplied = volumesApplied;
+    }
+
+    public boolean isTakenFromPile() {
+        return takenFromPile;
+    }
+
+    public void setTakenFromPile(boolean takenFromPile) {
+        this.takenFromPile = takenFromPile;
+    }
+
     public CoalBatch getBatch() {
         return batch;
     }

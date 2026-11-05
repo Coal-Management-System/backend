@@ -294,8 +294,7 @@ public class PileService {
         // A party may be folded into piles in several partial accepts; what is left is its
         // declared size minus everything already accepted, so the same party can be accepted
         // again (even into the same pile) until nothing remains.
-        BigDecimal accepted = movements.sumVolume(batch.getId(), MovementOperation.BATCH_ACCEPTED_INTO_PILE);
-        BigDecimal remaining = batch.currentRemainder().subtract(accepted);
+        BigDecimal remaining = movements.unplacedVolume(batch);
         if (req.volume() == null || req.volume().compareTo(BigDecimal.ZERO) <= 0) {
             throw ApiException.badRequest("Объем приёма должен быть больше нуля");
         }

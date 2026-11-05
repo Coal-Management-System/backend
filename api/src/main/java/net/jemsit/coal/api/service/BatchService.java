@@ -71,8 +71,12 @@ public class BatchService {
         }
         // Only parties that still have unaccepted volume are offerable to a pile.
         Map<UUID, BigDecimal> accepted = acceptedVolumeByBatch();
+        Map<UUID, BigDecimal> adjustments = movements.unplacedAdjustmentGrouped().stream()
+                .collect(Collectors.toMap(r -> (UUID) r[0], r -> (BigDecimal) r[1]));
         return all.stream()
-                .filter(b -> remainingOf(b, accepted.getOrDefault(b.getId(), BigDecimal.ZERO))
+                .filter(b -> b.currentRemainder()
+                        .subtract(accepted.getOrDefault(b.getId(), BigDecimal.ZERO))
+                        .add(adjustments.getOrDefault(b.getId(), BigDecimal.ZERO))
                         .compareTo(BigDecimal.ZERO) > 0)
                 .map(b -> new OptionDto(b.getId(), b.getBatchNumber()))
                 .toList();
@@ -82,11 +86,6 @@ public class BatchService {
     private Map<UUID, BigDecimal> acceptedVolumeByBatch() {
         return movements.sumVolumeGrouped(MovementOperation.BATCH_ACCEPTED_INTO_PILE).stream()
                 .collect(Collectors.toMap(r -> (UUID) r[0], r -> (BigDecimal) r[1], (x, y) -> x));
-    }
-
-    /** What is left of a party after everything folded into piles so far. */
-    private static BigDecimal remainingOf(CoalBatch b, BigDecimal accepted) {
-        return b.currentRemainder().subtract(accepted);
     }
 
     @Transactional(readOnly = true)
@@ -238,7 +237,7 @@ public class BatchService {
                 b.currentRemainder(),
                 b.freeVolume(),
                 accepted,
-                remainingOf(b, accepted),
+                movements.unplacedVolume(b),
                 b.getPiles().stream()
                         .map(p -> p.getWarehouse() == null ? null : p.getWarehouse().getNumber())
                         .filter(java.util.Objects::nonNull)
