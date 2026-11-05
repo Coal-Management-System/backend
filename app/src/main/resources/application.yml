@@ -28,7 +28,7 @@ management:
 
 coal:
   numbering:
-    # Calendar day behind the «П-ddMMyy-NNN» party numbers. Pinned rather than read from the
+    # Calendar day behind the «П-yyMMdd-NNN» party numbers. Pinned rather than read from the
     # JVM, because the server may run in UTC while the operators work on Uzbek time — otherwise
     # the daily counter would roll over five hours late.
     zone: ${COAL_NUMBERING_ZONE:Asia/Tashkent}

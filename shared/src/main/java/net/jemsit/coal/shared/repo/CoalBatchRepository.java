@@ -27,7 +27,7 @@ public interface CoalBatchRepository extends JpaRepository<CoalBatch, UUID> {
     boolean existsByBatchNumber(String batchNumber);
 
     /**
-     * Party numbers already issued for one day, e.g. every «П-021126-…». Read under an
+     * Party numbers already issued for one day, e.g. every «П-261102-…». Read under an
      * advisory lock by {@code BatchNumberGenerator} to find the day's last counter.
      */
     @Query("select b.batchNumber from CoalBatch b where b.batchNumber like concat(:prefix, '%')")

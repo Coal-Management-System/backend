@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Assigns party numbers of the form {@code П-ddMMyy-NNN} — the Cyrillic letter П, today's
+ * Assigns party numbers of the form {@code П-yyMMdd-NNN} — the Cyrillic letter П, today's
  * date, and a counter that restarts at 001 every day.
  *
  * <p>The counter is derived from the numbers already in the table rather than stored
@@ -28,7 +28,7 @@ public class BatchNumberGenerator {
 
     /** Party numbers start with the Russian letter П, as they did when operators typed them. */
     static final String PREFIX = "П-";
-    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("ddMMyy");
+    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("yyMMdd");
     private static final int SEQUENCE_WIDTH = 3;
     /** Namespace for the advisory-lock key, so it cannot collide with another lock in the DB. */
     private static final String LOCK_KEY = "coal:batch-number:";
