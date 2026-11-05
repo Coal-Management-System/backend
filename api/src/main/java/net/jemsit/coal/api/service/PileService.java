@@ -311,6 +311,9 @@ public class PileService {
         pile.getBatches().add(batch);
         // The party document keeps its declared size; the pile physically grows by the accepted part.
         pile.setVolume(pile.getVolume().add(req.volume()));
+        if (pile.getStatus() == PileStatus.EMPTY) {
+            pile.setStatus(PileStatus.ACTIVE);
+        }
         recordMovement(pile, batch, MovementOperation.BATCH_ACCEPTED_INTO_PILE, req.volume(),
                 from.isEmpty() ? null : from, warehouseNumber(pile));
         // Once the whole party has been folded into piles, its own lifecycle is over.

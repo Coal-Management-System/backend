@@ -6,6 +6,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import net.jemsit.coal.api.dto.QrDtos.QrPassportDto;
 import net.jemsit.coal.shared.api.ApiException;
+import net.jemsit.coal.shared.repo.QrActionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -18,15 +19,18 @@ public class QrService {
     private final BatchService batches;
     private final PileService piles;
     private final MovementService movements;
+    private final QrActionRepository actions;
     private final String baseUrl;
 
     public QrService(BatchService batches,
                      PileService piles,
                      MovementService movements,
+                     QrActionRepository actions,
                      @Value("${coal.qr.base-url:http://localhost:5174}") String baseUrl) {
         this.batches = batches;
         this.piles = piles;
         this.movements = movements;
+        this.actions = actions;
         this.baseUrl = baseUrl;
     }
 
@@ -71,6 +75,11 @@ public class QrService {
             case "batch" -> batches.get(id);
             case "pile" -> piles.get(id);
             case "movement" -> movements.get(id);
+            case "action" -> {
+                if (!actions.existsById(id)) {
+                    throw ApiException.notFound("QR-задание не найдено");
+                }
+            }
             default -> throw ApiException.badRequest("Неизвестный тип QR: " + type);
         }
     }
