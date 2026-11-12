@@ -5,7 +5,6 @@ public enum DictionaryField {
     PRODUCT_TYPE,
     COAL_GRADE,
     FRACTION,
-    QUARRY,
     DEPOSIT,
     MINING_SITE,
     SUPPLIER,

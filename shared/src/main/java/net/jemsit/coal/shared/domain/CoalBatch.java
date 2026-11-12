@@ -44,9 +44,6 @@ public class CoalBatch extends BaseEntity {
     @Column(name = "mining_site", length = 100)
     private String miningSite;
 
-    @Column(length = 100)
-    private String quarry;
-
     @Column(name = "shift_period", length = 100)
     private String shiftPeriod;
 
@@ -166,14 +163,6 @@ public class CoalBatch extends BaseEntity {
 
     public void setMiningSite(String miningSite) {
         this.miningSite = miningSite;
-    }
-
-    public String getQuarry() {
-        return quarry;
-    }
-
-    public void setQuarry(String quarry) {
-        this.quarry = quarry;
     }
 
     public String getShiftPeriod() {

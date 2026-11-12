@@ -420,7 +420,6 @@ public class PileService {
         to.setOriginType(from.getOriginType());
         to.setDeposit(from.getDeposit());
         to.setMiningSite(from.getMiningSite());
-        to.setQuarry(from.getQuarry());
         to.setShiftPeriod(from.getShiftPeriod());
         to.setSupplier(from.getSupplier());
         to.setMinedAt(from.getMinedAt());

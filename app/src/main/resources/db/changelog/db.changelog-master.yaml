@@ -29,3 +29,6 @@ databaseChangeLog:
   - include:
       file: changes/0010-user-activity.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/0011-drop-quarry.yaml
+      relativeToChangelogFile: true

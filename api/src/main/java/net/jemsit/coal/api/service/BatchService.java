@@ -118,7 +118,6 @@ public class BatchService {
         b.setOriginType(req.originType() == null ? OriginType.OWN_MINING : req.originType());
         b.setDeposit(req.deposit());
         b.setMiningSite(req.miningSite());
-        b.setQuarry(req.quarry());
         b.setShiftPeriod(req.shiftPeriod());
         b.setSupplier(req.supplier());
         b.setMinedAt(req.minedAt());
@@ -142,7 +141,6 @@ public class BatchService {
         b.setOriginType(req.originType());
         b.setDeposit(req.deposit());
         b.setMiningSite(req.miningSite());
-        b.setQuarry(req.quarry());
         b.setShiftPeriod(req.shiftPeriod());
         b.setSupplier(req.supplier());
         b.setMinedAt(req.minedAt());
@@ -225,7 +223,6 @@ public class BatchService {
                 b.getOriginType(),
                 b.getDeposit(),
                 b.getMiningSite(),
-                b.getQuarry(),
                 b.getShiftPeriod(),
                 b.getSupplier(),
                 b.getMinedAt(),

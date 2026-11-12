@@ -1,0 +1,13 @@
+databaseChangeLog:
+  # «Карьер» is no longer tracked on a party: drop the column and its dictionary words.
+  # Earlier changesets that created/seeded it stay untouched (Liquibase checksums them).
+  - changeSet:
+      id: 0011-drop-quarry
+      author: jemsit
+      changes:
+        - delete:
+            tableName: dictionary_entry
+            where: "field = 'QUARRY'"
+        - dropColumn:
+            tableName: coal_batch
+            columnName: quarry
