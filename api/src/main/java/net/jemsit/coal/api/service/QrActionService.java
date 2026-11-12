@@ -64,6 +64,10 @@ public class QrActionService {
                 .orElseThrow(() -> ApiException.notFound("Партия не найдена: " + req.batchId()));
         Warehouse warehouse = warehouses.findById(req.warehouseId())
                 .orElseThrow(() -> ApiException.notFound("Склад не найден: " + req.warehouseId()));
+        if (batch.getStatus().isFinal()) {
+            throw ApiException.badRequest("Партия " + batch.getBatchNumber() + " "
+                    + batch.getStatus().finalLabel() + ": QR-задание для нее создать нельзя");
+        }
         if (movements.unplacedVolume(batch).signum() <= 0) {
             throw ApiException.badRequest("У партии " + batch.getBatchNumber() + " нет объема для приёма в штабель");
         }

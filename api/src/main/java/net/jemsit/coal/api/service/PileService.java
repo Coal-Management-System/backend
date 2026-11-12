@@ -293,6 +293,10 @@ public class PileService {
         // A party may be folded into piles in several partial accepts; what is left is its
         // declared size minus everything already accepted, so the same party can be accepted
         // again (even into the same pile) until nothing remains.
+        if (batch.getStatus().isFinal()) {
+            throw ApiException.badRequest("Партия " + batch.getBatchNumber() + " "
+                    + batch.getStatus().finalLabel() + ": принять ее в штабель нельзя");
+        }
         BigDecimal remaining = movements.unplacedVolume(batch);
         if (req.volume() == null || req.volume().compareTo(BigDecimal.ZERO) <= 0) {
             throw ApiException.badRequest("Объем приёма должен быть больше нуля");
@@ -342,6 +346,13 @@ public class PileService {
             throw ApiException.badRequest("Штабель " + pile.getPileNumber() + " пуст: переносить нечего");
         }
         List<CoalBatch> sources = oldestFirst(pile);
+        // A transfer re-books every party in the pile, which would rewrite a closed party's volumes.
+        for (CoalBatch source : sources) {
+            if (source.getStatus().isFinal() && volumeInPile(source).signum() > 0) {
+                throw ApiException.badRequest("В штабеле лежит уголь партии " + source.getBatchNumber()
+                        + ", а она " + source.getStatus().finalLabel() + " — трансфер невозможен");
+            }
+        }
         // A reservation is a promise about specific coal; it has to be released or moved on purpose.
         for (CoalBatch source : sources) {
             if (source.getReservedVolume().signum() > 0) {
@@ -387,6 +398,10 @@ public class PileService {
         List<CoalBatch> givers = new ArrayList<>();
         BigDecimal left = volume;
         for (CoalBatch party : parties) {
+            // Sold / written-off parties are closed: their numbers stay as they were.
+            if (party.getStatus().isFinal()) {
+                continue;
+            }
             BigDecimal taken = left.min(volumeInPile(party)).max(BigDecimal.ZERO);
             if (taken.signum() == 0) {
                 continue;

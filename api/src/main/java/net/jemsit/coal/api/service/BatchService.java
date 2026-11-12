@@ -74,6 +74,7 @@ public class BatchService {
         Map<UUID, BigDecimal> adjustments = movements.unplacedAdjustmentGrouped().stream()
                 .collect(Collectors.toMap(r -> (UUID) r[0], r -> (BigDecimal) r[1]));
         return all.stream()
+                .filter(b -> !b.getStatus().isFinal())
                 .filter(b -> b.unplacedVolume(
                                 accepted.getOrDefault(b.getId(), BigDecimal.ZERO),
                                 adjustments.getOrDefault(b.getId(), BigDecimal.ZERO))
@@ -132,6 +133,10 @@ public class BatchService {
         if (!b.getBatchNumber().equals(req.batchNumber())
                 && batches.existsByBatchNumber(req.batchNumber())) {
             throw ApiException.conflict("Партия с номером " + req.batchNumber() + " уже существует");
+        }
+        if (b.getStatus().isFinal() && req.status() != b.getStatus()) {
+            throw ApiException.badRequest("Партия " + b.getBatchNumber() + " " + b.getStatus().finalLabel()
+                    + ": это окончательный статус, изменить его нельзя");
         }
         b.setBatchNumber(req.batchNumber());
         b.setProductType(req.productType());

@@ -12,6 +12,7 @@ import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.api.service.BatchService;
 import net.jemsit.coal.api.service.ActivityLog;
 import net.jemsit.coal.shared.domain.ActivityKind;
+import net.jemsit.coal.shared.domain.BatchStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -82,8 +83,11 @@ public class BatchController {
 
     @PutMapping("/{id}")
     public BatchDto update(@PathVariable UUID id, @Valid @RequestBody BatchUpdateRequest req) {
+        boolean wasFinal = service.get(id).status().isFinal();
         BatchDto b = service.update(id, req);
-        activity.record(ActivityKind.UPDATE, "BATCH", b.batchNumber(), "Изменил партию " + b.batchNumber());
+        String what = wasFinal || !b.status().isFinal() ? "Изменил партию "
+                : b.status() == BatchStatus.SOLD ? "Отметил как проданную партию " : "Списал партию ";
+        activity.record(ActivityKind.UPDATE, "BATCH", b.batchNumber(), what + b.batchNumber());
         return b;
     }
 

@@ -67,6 +67,10 @@ public class MovementService {
             throw ApiException.badRequest(
                     "Приём партии в штабель выполняется на странице штабелей");
         }
+        if (batch != null && batch.getStatus().isFinal()) {
+            throw ApiException.badRequest("Партия " + batch.getBatchNumber() + " "
+                    + batch.getStatus().finalLabel() + ": новые движения по ней невозможны");
+        }
         boolean movesVolumes = movesVolumes(req.operation());
         if (movesVolumes) {
             checkAvailable(req.operation(), req.volume(), batch, pile);
@@ -184,9 +188,9 @@ public class MovementService {
         }
     }
 
-    /** An archived party's lifecycle is finished; its status is not rewritten by movements. */
+    /** An archived, sold or written-off party's lifecycle is finished; movements do not rewrite it. */
     private void markStatus(CoalBatch batch, BatchStatus status) {
-        if (batch.getStatus() != BatchStatus.ARCHIVED) {
+        if (batch.getStatus() != BatchStatus.ARCHIVED && !batch.getStatus().isFinal()) {
             batch.setStatus(status);
         }
     }
