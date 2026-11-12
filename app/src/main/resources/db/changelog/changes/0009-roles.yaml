@@ -1,0 +1,102 @@
+databaseChangeLog:
+  # MANAGER and USER are replaced by the spec roles (section 20 «Права доступа»).
+  - changeSet:
+      id: 0009-migrate-legacy-roles
+      author: jemsit
+      changes:
+        - update:
+            tableName: app_user
+            columns:
+              - column: { name: role, value: "PRODUCTION_HEAD" }
+            where: "role = 'MANAGER'"
+        - update:
+            tableName: app_user
+            columns:
+              - column: { name: role, value: "DISPATCHER" }
+            where: "role = 'USER'"
+
+  # One local-development account per new role. Password is the username followed by 123.
+  - changeSet:
+      id: 0009-seed-role-users
+      author: jemsit
+      changes:
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000011" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "lab" }
+              - column: { name: password_hash, value: "$2a$10$B4arhiWAX345MYidq7ZJt.7cMtpI1oW8Y/EalTI/9vKHPQO..qAzK" }
+              - column: { name: full_name, value: "Лаборант" }
+              - column: { name: role, value: "LAB_TECHNICIAN" }
+              - column: { name: shift, value: "A" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000012" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "production" }
+              - column: { name: password_hash, value: "$2a$10$2qSXacSeaLbIL9uhBR5o6.Df/hVikjoPIGwYAOT8cf.dsrUnjEUDe" }
+              - column: { name: full_name, value: "Производственный персонал" }
+              - column: { name: role, value: "PRODUCTION_STAFF" }
+              - column: { name: shift, value: "A" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000013" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "storekeeper" }
+              - column: { name: password_hash, value: "$2a$10$Bqf3eDapjx.9PCJZAuDXnuBjqDr6PotUp0meNSF.eNwYT0txaePoy" }
+              - column: { name: full_name, value: "Кладовщик" }
+              - column: { name: role, value: "STOREKEEPER" }
+              - column: { name: shift, value: "A" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000014" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "operator" }
+              - column: { name: password_hash, value: "$2a$10$OZYu60wGiWpGPElxtcZHAeWxsQ7sRULiVE95N5ivB4Mn2HNNNjua." }
+              - column: { name: full_name, value: "Оператор склада" }
+              - column: { name: role, value: "WAREHOUSE_OPERATOR" }
+              - column: { name: shift, value: "A" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000015" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "dispatcher" }
+              - column: { name: password_hash, value: "$2a$10$D4lRIMBzFobQRPFuqyutB./Nmb9N6eD2cL8CsyMGP4RD4n9Iu2mO2" }
+              - column: { name: full_name, value: "Диспетчер" }
+              - column: { name: role, value: "DISPATCHER" }
+              - column: { name: shift, value: "B" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000016" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "head" }
+              - column: { name: password_hash, value: "$2a$10$i6QQ5PhqyeJ6xVqIMdH.fOctxMrRLcHvZKkZj2NTUxQGKauS.ngwu" }
+              - column: { name: full_name, value: "Руководитель производства" }
+              - column: { name: role, value: "PRODUCTION_HEAD" }
+              - column: { name: shift, value: "A" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000017" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "commercial" }
+              - column: { name: password_hash, value: "$2a$10$oP./T3Y7g/BLsKqOehMKdeg75E//u700pGoaO.Vws7DFa8/1bNhQC" }
+              - column: { name: full_name, value: "Коммерческий отдел" }
+              - column: { name: role, value: "COMMERCIAL" }
+              - column: { name: shift, value: "A" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000018" }
+              - column: { name: created_at, value: "2025-01-01T00:00:00Z" }
+              - column: { name: username, value: "director" }
+              - column: { name: password_hash, value: "$2a$10$De7xWI0MpaER1D/k6VzrU.SQ67M9a6BRAXdST7kIGP5o1JVLfMBGe" }
+              - column: { name: full_name, value: "Руководство" }
+              - column: { name: role, value: "MANAGEMENT" }
+              - column: { name: shift, value: "A" }
