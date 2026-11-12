@@ -5,6 +5,8 @@ import net.jemsit.coal.api.dto.MovementDtos.MovementCreateRequest;
 import net.jemsit.coal.api.dto.MovementDtos.MovementDto;
 import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.api.service.MovementService;
+import net.jemsit.coal.api.service.ActivityLog;
+import net.jemsit.coal.shared.domain.ActivityKind;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -27,9 +29,11 @@ import java.util.UUID;
 public class MovementController {
 
     private final MovementService service;
+    private final ActivityLog activity;
 
-    public MovementController(MovementService service) {
+    public MovementController(MovementService service, ActivityLog activity) {
         this.service = service;
+        this.activity = activity;
     }
 
     @GetMapping
@@ -49,12 +53,24 @@ public class MovementController {
     public void delete(@PathVariable UUID id,
                        @RequestHeader(name = "X-Admin-Key", required = false) String adminKey,
                        @RequestParam(required = false) String confirmOperation) {
+        MovementDto m = service.get(id);
         service.delete(id, adminKey, confirmOperation);
+        activity.record(ActivityKind.DELETE, "MOVEMENT", describe(m), "Удалил движение: " + describe(m));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public MovementDto create(@Valid @RequestBody MovementCreateRequest req) {
-        return service.create(req);
+        MovementDto m = service.create(req);
+        activity.record(ActivityKind.CREATE, "MOVEMENT", describe(m), "Создал движение: " + describe(m));
+        return m;
+    }
+
+    /** e.g. "SHIPMENT · партия 051126-001 · штабель П-002 · 40 т". */
+    private static String describe(MovementDto m) {
+        StringBuilder sb = new StringBuilder(m.operation().name());
+        if (m.batchNumber() != null) sb.append(" · партия ").append(m.batchNumber());
+        if (m.pileNumber() != null) sb.append(" · штабель ").append(m.pileNumber());
+        return sb.append(" · ").append(ActivityLog.tons(m.volume())).toString();
     }
 }

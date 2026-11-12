@@ -47,6 +47,8 @@ public class SecurityConfig {
                                 "/api/movements/*",
                                 "/api/qr/**")
                         .permitAll()
+                        // Reading the activity journal is admin-only; reporting a visit is not.
+                        .requestMatchers(HttpMethod.GET, "/api/activity", "/api/activity/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, e) -> {

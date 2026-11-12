@@ -7,6 +7,8 @@ import net.jemsit.coal.api.dto.QrActionDtos.QrActionDto;
 import net.jemsit.coal.api.dto.QrActionDtos.QrActionExecuteRequest;
 import net.jemsit.coal.api.dto.QrActionDtos.QrActionScanDto;
 import net.jemsit.coal.api.service.QrActionService;
+import net.jemsit.coal.api.service.ActivityLog;
+import net.jemsit.coal.shared.domain.ActivityKind;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -27,9 +29,11 @@ import java.util.UUID;
 public class QrActionController {
 
     private final QrActionService service;
+    private final ActivityLog activity;
 
-    public QrActionController(QrActionService service) {
+    public QrActionController(QrActionService service, ActivityLog activity) {
         this.service = service;
+        this.activity = activity;
     }
 
     @GetMapping
@@ -42,7 +46,10 @@ public class QrActionController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public QrActionDto create(@Valid @RequestBody QrActionCreateRequest req) {
-        return service.create(req);
+        QrActionDto a = service.create(req);
+        activity.record(ActivityKind.CREATE, "QR_ACTION", a.batchNumber(),
+                "Создал QR-задание: партия " + a.batchNumber() + " → склад " + a.warehouseNumber());
+        return a;
     }
 
     @GetMapping("/{id}")
@@ -52,11 +59,18 @@ public class QrActionController {
 
     @PostMapping("/{id}/execute")
     public QrActionDto execute(@PathVariable UUID id, @Valid @RequestBody QrActionExecuteRequest req) {
-        return service.execute(id, req);
+        QrActionDto a = service.execute(id, req);
+        activity.record(ActivityKind.ACTION, "QR_ACTION", a.batchNumber(),
+                "Принял по QR партию " + a.batchNumber() + " в штабель " + activity.pileNumber(req.pileId())
+                        + " (" + ActivityLog.tons(req.volume()) + ")");
+        return a;
     }
 
     @PostMapping("/{id}/cancel")
     public QrActionDto cancel(@PathVariable UUID id) {
-        return service.cancel(id);
+        QrActionDto a = service.cancel(id);
+        activity.record(ActivityKind.ACTION, "QR_ACTION", a.batchNumber(),
+                "Отменил QR-задание: партия " + a.batchNumber() + " → склад " + a.warehouseNumber());
+        return a;
     }
 }

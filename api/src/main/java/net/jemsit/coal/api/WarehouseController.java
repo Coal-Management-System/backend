@@ -7,6 +7,8 @@ import net.jemsit.coal.api.dto.PileDtos.PileDto;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseCreateRequest;
 import net.jemsit.coal.api.dto.WarehouseDtos.WarehouseDto;
 import net.jemsit.coal.api.service.WarehouseService;
+import net.jemsit.coal.api.service.ActivityLog;
+import net.jemsit.coal.shared.domain.ActivityKind;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -30,9 +32,11 @@ import java.util.UUID;
 public class WarehouseController {
 
     private final WarehouseService service;
+    private final ActivityLog activity;
 
-    public WarehouseController(WarehouseService service) {
+    public WarehouseController(WarehouseService service, ActivityLog activity) {
         this.service = service;
+        this.activity = activity;
     }
 
     @GetMapping
@@ -49,7 +53,9 @@ public class WarehouseController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public WarehouseDto create(@Valid @RequestBody WarehouseCreateRequest req) {
-        return service.create(req);
+        WarehouseDto w = service.create(req);
+        activity.record(ActivityKind.CREATE, "WAREHOUSE", w.number(), "Создал склад " + w.number());
+        return w;
     }
 
     @GetMapping("/{id}/piles")
@@ -63,5 +69,6 @@ public class WarehouseController {
                        @RequestHeader(name = "X-Admin-Key", required = false) String adminKey,
                        @RequestParam(required = false) String confirmNumber) {
         service.delete(id, adminKey, confirmNumber);
+        activity.record(ActivityKind.DELETE, "WAREHOUSE", confirmNumber, "Удалил склад " + confirmNumber);
     }
 }

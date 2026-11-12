@@ -1,0 +1,30 @@
+databaseChangeLog:
+  # Admin journal of who did what: logins, page visits and every create / update / delete.
+  # No foreign key to app_user on purpose: the name is copied, so entries outlive the user.
+  - changeSet:
+      id: 0010-user-activity
+      author: jemsit
+      changes:
+        - createTable:
+            tableName: user_activity
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: updated_at, type: timestamptz }
+              - column: { name: username, type: "varchar(80)", constraints: { nullable: false } }
+              - column: { name: full_name, type: "varchar(200)" }
+              - column: { name: kind, type: "varchar(20)", constraints: { nullable: false } }
+              - column: { name: entity_type, type: "varchar(30)" }
+              - column: { name: entity_label, type: "varchar(200)" }
+              - column: { name: summary, type: "varchar(500)", constraints: { nullable: false } }
+        - createIndex:
+            tableName: user_activity
+            indexName: ix_user_activity_created
+            columns:
+              - column: { name: created_at }
+        - createIndex:
+            tableName: user_activity
+            indexName: ix_user_activity_user_created
+            columns:
+              - column: { name: username }
+              - column: { name: created_at }

@@ -26,3 +26,6 @@ databaseChangeLog:
   - include:
       file: changes/0009-roles.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/0010-user-activity.yaml
+      relativeToChangelogFile: true

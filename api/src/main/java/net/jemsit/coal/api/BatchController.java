@@ -10,6 +10,8 @@ import net.jemsit.coal.api.dto.LabDtos.AnalysisDto;
 import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
 import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.api.service.BatchService;
+import net.jemsit.coal.api.service.ActivityLog;
+import net.jemsit.coal.shared.domain.ActivityKind;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -34,9 +36,11 @@ import java.util.UUID;
 public class BatchController {
 
     private final BatchService service;
+    private final ActivityLog activity;
 
-    public BatchController(BatchService service) {
+    public BatchController(BatchService service, ActivityLog activity) {
         this.service = service;
+        this.activity = activity;
     }
 
     @GetMapping
@@ -66,7 +70,9 @@ public class BatchController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public BatchDto create(@Valid @RequestBody BatchCreateRequest req) {
-        return service.create(req);
+        BatchDto b = service.create(req);
+        activity.record(ActivityKind.CREATE, "BATCH", b.batchNumber(), "Создал партию " + b.batchNumber());
+        return b;
     }
 
     @GetMapping("/{id}")
@@ -76,7 +82,9 @@ public class BatchController {
 
     @PutMapping("/{id}")
     public BatchDto update(@PathVariable UUID id, @Valid @RequestBody BatchUpdateRequest req) {
-        return service.update(id, req);
+        BatchDto b = service.update(id, req);
+        activity.record(ActivityKind.UPDATE, "BATCH", b.batchNumber(), "Изменил партию " + b.batchNumber());
+        return b;
     }
 
     @DeleteMapping("/{id}")
@@ -85,6 +93,7 @@ public class BatchController {
                        @RequestHeader(name = "X-Admin-Key", required = false) String adminKey,
                        @RequestParam(required = false) String confirmNumber) {
         service.delete(id, adminKey, confirmNumber);
+        activity.record(ActivityKind.DELETE, "BATCH", confirmNumber, "Удалил партию " + confirmNumber);
     }
 
     @GetMapping("/{id}/quality-history")

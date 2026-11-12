@@ -8,6 +8,8 @@ import net.jemsit.coal.api.dto.LabDtos.LabDto;
 import net.jemsit.coal.api.dto.OptionDtos.OptionDto;
 import net.jemsit.coal.api.dto.PageDtos.PageResponse;
 import net.jemsit.coal.api.service.LabService;
+import net.jemsit.coal.api.service.ActivityLog;
+import net.jemsit.coal.shared.domain.ActivityKind;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -31,9 +33,11 @@ import java.util.UUID;
 public class LabController {
 
     private final LabService service;
+    private final ActivityLog activity;
 
-    public LabController(LabService service) {
+    public LabController(LabService service, ActivityLog activity) {
         this.service = service;
+        this.activity = activity;
     }
 
     @GetMapping("/labs")
@@ -50,7 +54,9 @@ public class LabController {
     @PostMapping("/labs")
     @ResponseStatus(HttpStatus.CREATED)
     public LabDto createLab(@Valid @RequestBody LabCreateRequest req) {
-        return service.createLab(req);
+        LabDto lab = service.createLab(req);
+        activity.record(ActivityKind.CREATE, "LAB", lab.name(), "Создал лабораторию " + lab.name());
+        return lab;
     }
 
     @DeleteMapping("/labs/{id}")
@@ -59,6 +65,7 @@ public class LabController {
                           @RequestHeader(name = "X-Admin-Key", required = false) String adminKey,
                           @RequestParam(required = false) String confirmName) {
         service.deleteLab(id, adminKey, confirmName);
+        activity.record(ActivityKind.DELETE, "LAB", confirmName, "Удалил лабораторию " + confirmName);
     }
 
     @GetMapping("/lab-analyses")
@@ -71,7 +78,10 @@ public class LabController {
     @PostMapping("/lab-analyses")
     @ResponseStatus(HttpStatus.CREATED)
     public AnalysisDto createAnalysis(@Valid @RequestBody AnalysisCreateRequest req) {
-        return service.createAnalysis(req);
+        AnalysisDto a = service.createAnalysis(req);
+        activity.record(ActivityKind.CREATE, "ANALYSIS", a.sampleNumber(),
+                "Добавил анализ " + a.sampleNumber() + " для партии " + a.batchNumber());
+        return a;
     }
 
     @DeleteMapping("/lab-analyses/{id}")
@@ -80,5 +90,6 @@ public class LabController {
                                @RequestHeader(name = "X-Admin-Key", required = false) String adminKey,
                                @RequestParam(required = false) String confirmNumber) {
         service.deleteAnalysis(id, adminKey, confirmNumber);
+        activity.record(ActivityKind.DELETE, "ANALYSIS", confirmNumber, "Удалил анализ " + confirmNumber);
     }
 }

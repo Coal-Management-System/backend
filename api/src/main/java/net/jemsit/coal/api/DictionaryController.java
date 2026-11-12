@@ -5,6 +5,8 @@ import net.jemsit.coal.api.dto.DictionaryDtos.AddRequest;
 import net.jemsit.coal.api.dto.DictionaryDtos.EntryDto;
 import net.jemsit.coal.api.service.DictionaryService;
 import net.jemsit.coal.shared.domain.DictionaryField;
+import net.jemsit.coal.api.service.ActivityLog;
+import net.jemsit.coal.shared.domain.ActivityKind;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,9 +27,11 @@ import java.util.Map;
 public class DictionaryController {
 
     private final DictionaryService service;
+    private final ActivityLog activity;
 
-    public DictionaryController(DictionaryService service) {
+    public DictionaryController(DictionaryService service, ActivityLog activity) {
         this.service = service;
+        this.activity = activity;
     }
 
     @GetMapping
@@ -38,7 +42,10 @@ public class DictionaryController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public EntryDto add(@Valid @RequestBody AddRequest req) {
-        return service.add(req);
+        EntryDto e = service.add(req);
+        activity.record(ActivityKind.CREATE, "DICTIONARY", e.value(),
+                "Добавил в словарь " + e.field() + ": " + e.value());
+        return e;
     }
 
     @DeleteMapping("/{field}")
@@ -48,5 +55,6 @@ public class DictionaryController {
                        @RequestHeader(name = "X-Admin-Key", required = false) String adminKey,
                        @RequestParam(required = false) String confirmValue) {
         service.delete(field, value, adminKey, confirmValue);
+        activity.record(ActivityKind.DELETE, "DICTIONARY", value, "Удалил из словаря " + field + ": " + value);
     }
 }
